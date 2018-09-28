@@ -158,6 +158,8 @@
     <Compile Include="Assets\Scripts\Controller\Inputs\KeyboardInput.cs" />
     <Compile Include="Assets\Scripts\Controller\Inputs\MouseInput.cs" />
     <Compile Include="Assets\Scripts\Controller\KeyMapping.cs" />
+    <Compile Include="Assets\Scripts\ObjectController.cs" />
+    <Compile Include="Assets\Scripts\ObjectHandler.cs" />
     <Compile Include="Assets\Scripts\PlayerMotor.cs" />
     <None Include="Assets\GoogleVR\Shaders\GvrUIOverlayFont.shader" />
     <None Include="Assets\GoogleVR\Shaders\GvrAdditiveOverlay.shader" />
