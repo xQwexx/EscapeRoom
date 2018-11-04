@@ -1981,7 +1981,7 @@ public static class InputControl
             }
         }
         #endregion
-        Debug.Log(axis.name + " " + axis.getValue(exactKeyModifiers, mInputDevice) + "\n");
+        //Debug.Log(axis.name + " " + axis.getValue(exactKeyModifiers, mInputDevice) + "\n");
         return axis.getValue(exactKeyModifiers, mInputDevice) * sensitivity;
     }
 

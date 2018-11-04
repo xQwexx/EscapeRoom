@@ -40,6 +40,7 @@ public class GvrReticlePointer : GvrBasePointer {
   /// Growth speed multiplier for the reticle/
   public float reticleGrowthSpeed = 8.0f;
 
+
   /// Sorting order to use for the reticle's renderer.
   /// Range values come from https://docs.unity3d.com/ScriptReference/Renderer-sortingOrder.html.
   /// Default value 32767 ensures gaze reticle is always rendered on top.
@@ -74,7 +75,7 @@ public class GvrReticlePointer : GvrBasePointer {
 
   public override void OnPointerHover(RaycastResult raycastResultResult, bool isInteractive) {
     SetPointerTarget(raycastResultResult.worldPosition, isInteractive);
-  }
+    }
 
   public override void OnPointerExit(GameObject previousObject) {
     ReticleDistanceInMeters = maxReticleDistance;
@@ -140,7 +141,7 @@ public class GvrReticlePointer : GvrBasePointer {
 
   void Update() {
     UpdateDiameters();
-  }
+    }
 
   private bool SetPointerTarget(Vector3 target, bool interactive) {
     if (base.PointerTransform == null) {

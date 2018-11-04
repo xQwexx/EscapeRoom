@@ -1,40 +1,43 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Collider))]
 public class ObjectController : MonoBehaviour
 {
-    private Vector3 startingPosition;
+    //private Vector3 startingPosition;
     private Renderer myRenderer;
+    private bool gazedAt;
+    public int id;
 
     public Material inactiveMaterial;
     public Material gazedAtMaterial;
+    private ObjectsHandler handler;
 
     void Start()
     {
-        startingPosition = transform.localPosition;
+
+        //startingPosition = transform.localPosition;
         myRenderer = GetComponent<Renderer>();
+        handler = FindObjectOfType<ObjectsHandler>();
         SetGazedAt(false);
     }
 
     public void SetGazedAt(bool gazedAt)
     {
+        this.gazedAt = gazedAt;
         if (inactiveMaterial != null && gazedAtMaterial != null)
         {
             myRenderer.material = gazedAt ? gazedAtMaterial : inactiveMaterial;
             return;
         }
     }
-
-    public void Reset()
+    public void Update()
     {
-        int sibIdx = transform.GetSiblingIndex();
-        int numSibs = transform.parent.childCount;
-        for (int i = 0; i < numSibs; i++)
+        if (gazedAt && InputControl.GetButtonDown(Controls.buttons.fire1))
         {
-            GameObject sib = transform.parent.GetChild(i).gameObject;
-            sib.transform.localPosition = startingPosition;
-            sib.SetActive(i == sibIdx);
+            //Debug.LogError("Selecting: " + this.gameObject);
+            handler.OnObjectSelected(this.gameObject);
         }
     }
 
@@ -62,10 +65,10 @@ public class ObjectController : MonoBehaviour
         // Move to random new location ±100º horzontal.
         Vector3 direction = Quaternion.Euler(
             0,
-            Random.Range(-90, 90),
+            UnityEngine.Random.Range(-90, 90),
             0) * Vector3.forward;
         // New location between 1.5m and 3.5m.
-        float distance = 2 * Random.value + 1.5f;
+        float distance = 2 * UnityEngine.Random.value + 1.5f;
         Vector3 newPos = direction * distance;
         // Limit vertical position to be fully in the room.
         newPos.y = Mathf.Clamp(newPos.y, -1.2f, 4f);
@@ -74,5 +77,10 @@ public class ObjectController : MonoBehaviour
         //randomSib.SetActive(true);
         //gameObject.SetActive(false);
         SetGazedAt(false);
+    }
+
+    internal void setHandler(ObjectsHandler objectsHandler)
+    {
+        handler = objectsHandler;
     }
 }

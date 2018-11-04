@@ -63,7 +63,7 @@ public static class Controls
         buttons.left = InputControl.setKey("Left", KeyCode.A, KeyCode.LeftArrow, new JoystickInput(JoystickAxis.Axis1Negative));
         buttons.right = InputControl.setKey("Right", KeyCode.D, KeyCode.RightArrow, new JoystickInput(JoystickAxis.Axis1Positive));
         buttons.fire1 = InputControl.setKey("Fire1", MouseButton.Left, KeyCode.LeftControl, new JoystickInput(JoystickButton.Button1));
-        buttons.fire2 = InputControl.setKey("Fire2", MouseButton.Right, KeyCode.LeftAlt, new JoystickInput(JoystickButton.Button2));
+        buttons.fire2 = InputControl.setKey("Fire2", MouseButton.Right, KeyCode.RightAlt, new JoystickInput(JoystickButton.Button2));
         buttons.fire3 = InputControl.setKey("Fire3", MouseButton.Middle, KeyCode.LeftCommand, new JoystickInput(JoystickButton.Button3));
         buttons.jump = InputControl.setKey("Jump", KeyCode.Space, KeyCode.None, new JoystickInput(JoystickButton.Button4));
         buttons.run = InputControl.setKey("Run", KeyCode.LeftShift, KeyCode.RightShift, new JoystickInput(JoystickButton.Button5));
