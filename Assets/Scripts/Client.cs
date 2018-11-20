@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Client : MonoBehaviour {
@@ -15,7 +16,7 @@ public class Client : MonoBehaviour {
     private int port = 5701;
 
     private int hostId;
-    private int webHostId;
+    //private int webHostId;
     private int connectionId;
 
     private float connectionTime;
@@ -25,24 +26,18 @@ public class Client : MonoBehaviour {
 
     private bool isStarted = false;
     private bool isConnected = false;
-    private string playerName;
     private byte error;
+    bool created = false;
 
     private PlayersHandler players;
     private ObjectsHandler objects;
     private RoomHandler rooms;
 
 
-    public void Connect()
+    public void Connect(string pIp)
     {
-        string pName = "valaki"; //GameObject.Find("NameInput").GetComponent<InputField>().text;
-        if(pName == "")
-        {
-            Debug.Log("You must enter a name!");
-            return;
-        }
-
-        playerName = pName;
+        
+        
 
         NetworkTransport.Init();
         ConnectionConfig myConfig = new ConnectionConfig();
@@ -55,8 +50,8 @@ public class Client : MonoBehaviour {
         HostTopology topo = new HostTopology(myConfig, MAX_CONNECTION);
 
         hostId = NetworkTransport.AddHost(topo, 0);
-        connectionId = NetworkTransport.Connect(hostId, "192.168.0.175", port, 0, out error);
-
+        connectionId = NetworkTransport.Connect(hostId, pIp, port, 0, out error);//"192.168.0.175""127.0.0.1"
+        Debug.Log("Connect: " + pIp );
         connectionTime = Time.time;
         isConnected = true;
     }
@@ -69,10 +64,12 @@ public class Client : MonoBehaviour {
 
     private void Start()
     {
+        
+        //Debug.Log("INIT Sended");
         players = GetComponent<PlayersHandler>();
         objects = GetComponent<ObjectsHandler>();
         rooms = GetComponent<RoomHandler>();
-        this.Connect();
+
     }
 
     private void Update()
@@ -120,25 +117,39 @@ public class Client : MonoBehaviour {
 
     private void OnDataRecieved(string[] data)
     {
-        PairLockHandler locker;
+        Debug.Log("Client: " + connectionId + " recieved: " + string.Join("|", data));
         switch (data[0])
         {
+            case "CONNECTED":
+                //StartCoroutine(Loadlvl());
+                Send("INIT", reliableChannel);
+                break;
             case "ASKNAME":
                 OnAskName(data);
                 break;
             case "CNN":
+                
                 players.SpawnPlayer(data[1], int.Parse(data[2]));
                 isStarted = true;
                 break;
             case "DC":
                 players.PlayerDisconnected(int.Parse(data[1]));
                 break;
-            case "OBJECTS":
+            case "MOVABLEOBJECTS":
                 for (int i = 1; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
                     Debug.Log(data[i]);
                     objects.SpawnObjects(int.Parse(d[0]), Instantiate(Resources.Load<GameObject>(d[1]), stringToVec(d[2]), stringToQuat(d[3])));
+                }
+                break;
+            case "OBJECTS":
+                for (int i = 2; i < data.Length; i++)
+                {
+                    string[] d = data[i].Split('%');
+                    Debug.Log(data[i]);
+                    GameObject o = Instantiate(Resources.Load<GameObject>(d[0]), stringToVec(d[1]), stringToQuat(d[3]));
+                    o.transform.localScale = stringToVec(d[2]);
                 }
                 break;
             case "MOVEOBJECT":
@@ -161,53 +172,98 @@ public class Client : MonoBehaviour {
                 //Debug.LogError(data[1]);
                 Instantiate(Resources.Load<GameObject>(data[1]));
                 break;
-            case "PAIRLOCK":
-                //Debug.LogError(data[1]);
+            case "LOCK":
+                OnLockDataRecieved(data);
+                break;
+            case "ROOMRESOLVED":
+                Debug.LogWarning("Recieved message: " + string.Join("|", data));
+                rooms.OnDoorOpen(int.Parse(data[1]), int.Parse(data[2]));
+                break;
+            default:
+                Debug.LogWarning("Invalid message: " + string.Join("|", data));
+                break;
+        }
+    }
 
-                
-                if ((locker = rooms.GetRoom(int.Parse(data[1])).GetComponentInChildren<PairLockHandler>()) == null)
-                {
-                    //locker = new PairLockHandler();
+    /*IEnumerator Loadlvl()
+    {
+        //SceneManager.LoadScene("Main", LoadSceneMode.Single);
+        //Debug.Log("Scene loaded");
+        //yield return null;
+        //players = GetComponent<PlayersHandler>();
+        //objects = GetComponent<ObjectsHandler>();
+        //rooms = GetComponent<RoomHandler>();
+        
+    }*/
+
+    private void OnLockDataRecieved(string[] data)
+    {
+        LockHandler locker;
+        Debug.LogError("Locker: " + string.Join("|", data));
+        int lockId;
+        if (int.TryParse(data[1], out lockId))
+        {
+            if ((locker = rooms.GetRoom(lockId).GetComponentInChildren<LockHandler>()) == null)
+            {
+                Debug.LogError("Locker not here: " + string.Join("|", data));
+                return;
+            }
+        }
+        else
+        {
+            string[] d = data[1].Split('%');
+            switch (d[0])
+            {
+                case "COLOR":
+                    locker = Resources.Load<GameObject>("Prefabs/ColorLock").GetComponent<KeyLockHandler>();
+                    //locker.name = "ColorLock";
+                    locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(d[1])).transform;
+                    locker.gameObject.transform.position = stringToVec(d[2]);
+                    break;
+                case "PAIR":
                     locker = new GameObject().AddComponent<PairLockHandler>();
                     locker.name = "PairLock";
-                    locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(data[1])).transform;
-                }
+                    locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(d[1])).transform;
+                    break;
+                default:
+                    Debug.LogError("Invalid message: " + string.Join("|", data));
+                    return;
+            }
+        }
+        switch (data[2])
+        {
+            case "ADD":
+                //Debug.LogError(data[1]);
+                Debug.LogError("Locker: " + string.Join("|", data));
+                Debug.LogError(locker);
                 //Debug.LogError(string.Join("|", data));
-                int buttonCount = locker.transform.childCount -3;
-                for (int i = 3; i < data.Length; i++)
+                int buttonCount = locker.transform.childCount - 4;
+                for (int i = 4; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
-                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[2])).AddComponent<LockerButton>();
-                    button.gameObject.transform.parent = locker.transform;
+                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[3])).AddComponent<LockerButton>();
+                    button.gameObject.transform.parent = locker.gameObject.transform;
                     button.gameObject.transform.position = stringToVec(d[1]);
                     button.gameObject.transform.localScale = stringToVec(d[2]);
                     button.gameObject.transform.rotation = stringToQuat(d[3]);
-                    button.id = i + buttonCount;
+                    button.id = buttonCount + i;// int.Parse(d[0]);
                     button.SetLockerHandler(locker);
                     Material mat = (Material)Resources.Load("Material/Blue", typeof(Material)); ;
                     //mat.SetColor("_SpecColor", Color.red);
                     button.GetComponent<LockerButton>().SetSelected(mat);
-                    
+
                 }
                 //Instantiate(Resources.Load<GameObject>(data[1]));
                 break;
-            case "LOCKPASSWORD":
+            case "PASSWORD":
                 //Debug.LogError(data[1]);
                 //PairLockHandler locker;
-                if ((locker = rooms.GetRoom(int.Parse(data[1])).GetComponentInChildren<PairLockHandler>()) == null)
-                {
-                    Debug.LogError("Locker Not Here " +  string.Join("|", data));
-                    break;
-                }
-                //Debug.LogError(string.Join("|", data));
-                int[] password = Array.ConvertAll(data[2].Split('%'), delegate (string s) { return int.Parse(s); });
-                Debug.LogError( password);
-                Debug.LogWarning("Invalid message: " + string.Join("|", data[2].Split('%')));
-                locker.SetPassword(password, int.Parse(data[2]));
+                Debug.LogError(string.Join("|", data));
+                int[] password = Array.ConvertAll(data[3].Split('%'), delegate (string s) { return int.Parse(s); });
+                Debug.LogError(password.Length);
+                Debug.LogWarning("Invalid message: " + string.Join("|", data[3].Split('%')));
+                locker.SetPassword(password, int.Parse(data[4]));
                 //Instantiate(Resources.Load<GameObject>(data[1]));
-                break;
-            case "ROOMRESOLVED":
-                rooms.OnDoorOpen(int.Parse(data[1]), int.Parse(data[2]));
                 break;
             default:
                 Debug.LogWarning("Invalid message: " + string.Join("|", data));
@@ -219,7 +275,7 @@ public class Client : MonoBehaviour {
     {
         players.setOurPlayerId(int.Parse(data[1]));
 
-        Send("NAMEIS|" + playerName, reliableChannel);
+        Send("NAMEIS|" + players.getPlayerName(connectionId), reliableChannel);
 
         for (int i = 2; i < data.Length; i++)
         {
@@ -231,6 +287,7 @@ public class Client : MonoBehaviour {
 
     public void OnRoomResolving(int roomId)
     {
+        Debug.LogWarning("Resolved Room: " + roomId);
         Send("ROOMRESOLVED|" + roomId.ToString(), reliableChannel);
     }
 
@@ -249,7 +306,7 @@ public class Client : MonoBehaviour {
 
     private void Send(string message, int channelId)
     {
-        //Debug.Log("Sending: " + message);
+        Debug.Log("Client Sending: " + message);
         byte[] msg = Encoding.Unicode.GetBytes(message);
         NetworkTransport.Send(hostId, connectionId, channelId, msg, message.Length * sizeof(char), out error);
     }

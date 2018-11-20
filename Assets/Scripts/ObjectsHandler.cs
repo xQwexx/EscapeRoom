@@ -16,7 +16,6 @@ public class ObjectsHandler : MonoBehaviour {
     // Use this for initialization
     void Start () {
         client = GetComponent<Client>();
-        Debug.Log(" plasyerah" + player);
         camera = player.GetComponent<PlayerMotor>();
         //Debug.Log(" alksdfasssssssssjh" + camera);
     }
@@ -74,4 +73,5 @@ public class ObjectsHandler : MonoBehaviour {
         obj.GetComponent<ObjectController>().id = objId;
         objects.Add(objId, obj);
     }
+
 }

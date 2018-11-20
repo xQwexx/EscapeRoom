@@ -6,14 +6,14 @@ public class Room : MonoBehaviour {
     public DoorHandler[] doors;
 
     RoomHandler handler;
-    public int id { get; set; }
+    public int id;
     private Vector3 dim;
 
 	// Use this for initialization
 	void Start () {
         doors = GetComponentsInChildren<DoorHandler>();
         handler = FindObjectOfType<RoomHandler>();
-        handler.AddRoom(this);
+        //handler.AddRoom(this);
 
         foreach (var item in GetComponentsInChildren<Collider>())
         {

@@ -29,7 +29,7 @@ public class PairLockHandler : LockHandler {
         }
         if (counter == password.Count && password.Count == indvBuffer.Count)
         {
-            Debug.LogError("Room Resolved");
+            Debug.LogError("Room Resolved" + room);
             room.OnRoomResolved();
             counter = 0;
             //indvBuffer.RemoveRange(0, indvNumber);

@@ -33,7 +33,7 @@ public class PlayersHandler : MonoBehaviour {
         else
         {
             go = Instantiate<GameObject>(playerAvatarPrefab).GetComponent<Player>();
-            go.playerName = playerName;
+            go.SetPlayerName(playerName);
             //go.AddComponent<Player>();
         }
 
@@ -65,17 +65,11 @@ public class PlayersHandler : MonoBehaviour {
     }
 
 
-   public void setPlayerPosition(int cnnId, string player)
+   public void setPlayerPosition(int cnnId, string playerData)
     {
         if (cnnId == ourPlayerId) return;
-        string[] data = player.Split('$');
-        /*players[cnnId].pos = player.pos;
-        players[cnnId].transform.position = player.pos;
-        players[cnnId].moveDir = player.moveDir;
-        players[cnnId].headDir = player.headDir;*/
-        players[cnnId].pos = players[cnnId].transform.position = stringToVec(data[0]);
-        players[cnnId].moveDir = stringToVec(data[1]);
-        players[cnnId].headDir = stringToVec(data[2]);
+        //players[cnnId].data.pos = players[cnnId].transform.position = stringToVec(data[0]);
+        players[cnnId].StringToPlayer(playerData);
     }
 
     public Player getPlayerPosition(int cnnId)
@@ -94,12 +88,12 @@ public class PlayersHandler : MonoBehaviour {
     }
     public string getPlayerName(int cnnId)
     {
-        return players[cnnId].playerName;
+        return "adsads";//players[cnnId].playerName;
     }
 
     public void setPlayerName(int cnnId, string name)
     {
-        players[cnnId].playerName = name;
+        players[cnnId].SetPlayerName(name);
     }
 
     private Vector3 stringToVec(string s)

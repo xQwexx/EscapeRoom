@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Networking.Types;
 
 public class ViewerServer : MonoBehaviour {
 
@@ -21,21 +22,24 @@ public class ViewerServer : MonoBehaviour {
 
     private bool isStarted = false;
     private byte error;
+    private string ipAddress;
     public GameObject thing;
 
 
     private float lastMovementUpdate;
     private float movementUpdateRate = 0.05f;
     private List<int> clientIds;
-    private PlayersHandler players;
+    private Dictionary<int, PlayerData> players;
     private ObjectsHandler objects;
     private RoomHandler rooms;
+    private GenerateLVL lvlgenerator;
+
 
     private void Start()
     {
-        players = GetComponent<PlayersHandler>();
-        objects = GetComponent<ObjectsHandler>();
-        rooms = GetComponent<RoomHandler>();
+        players = new Dictionary<int, PlayerData>();
+        objects = FindObjectOfType<ObjectsHandler>();
+        rooms = FindObjectOfType<RoomHandler>();
         NetworkTransport.Init();
         ConnectionConfig cc = new ConnectionConfig();
 
@@ -49,21 +53,30 @@ public class ViewerServer : MonoBehaviour {
 
         clientIds = new List<int>();
         isStarted = true;
-
+        lvlgenerator = new GenerateLVL();
+        lvlgenerator.Generate(rooms);
         System.Random rnd = new System.Random();
-        for (int i = 0; i < 20; i++)
+        /*
+            for (int i = 0; i < 20; i++)
         {
 
             objects.SpawnObjects(i, Instantiate(Resources.Load<GameObject>("Prefabs/CubePrefab"), new Vector3(rnd.Next(-10, 10), rnd.Next(0, 2), rnd.Next(-10, 10)), new Quaternion(rnd.Next(-10, 10), rnd.Next(0, 2), rnd.Next(-10, 10), rnd.Next(-10, 10))));
 
-        }
+        }*/
+        int p;
+        NetworkID net;
+        NodeID node;
+        // hostId
+        NetworkTransport.GetConnectionInfo(webHostId,webHostId, out ipAddress, out p, out net, out node, out error);
 
-        GameObject room = Instantiate(Resources.Load<GameObject>("Prefabs/Room"));
+        //GameObject room = Instantiate(Resources.Load<GameObject>("Prefabs/Room"));
 
-        rooms.AddRoom(room.GetComponent<Room>());
-        rooms.GetRoom(0).gameObject.AddComponent<GenerateLVL>();
+        //rooms.AddRoom(room.GetComponent<Room>());
+        //FindObjectOfType<Client>().Connect("127.0.0.1");
     }
-
+    public void Init()
+    {
+    }
 
     private void Update()
     {
@@ -87,7 +100,15 @@ public class ViewerServer : MonoBehaviour {
                     break;
                 case NetworkEventType.ConnectEvent:
                     Debug.Log("Player " + cnnId + " has connected");
+                    Send("CONNECTED", reliableChannel, cnnId);
                     OnConnection(cnnId);
+                    string hostName = System.Net.Dns.GetHostName();
+                    for (int i = 0; i < System.Net.Dns.GetHostEntry(hostName).AddressList.Length; i++)
+                    {
+                        string localIP = System.Net.Dns.GetHostEntry(hostName).AddressList[i].ToString();//NetworkManager.singleton.networkAddress
+                        Send(localIP, reliableChannel, cnnId);
+                    }
+                    noEventsLeft = true;
                     break;
                 case NetworkEventType.DataEvent:
                     string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
@@ -98,7 +119,7 @@ public class ViewerServer : MonoBehaviour {
                     break;
                 case NetworkEventType.DisconnectEvent:
                     Debug.Log("Player " + cnnId + " has disconnected");
-                    players.PlayerDisconnected(cnnId);
+                    players.Remove(cnnId);
                     clientIds.Remove(cnnId);
                     Send("DC|" + cnnId, reliableChannel, clientIds);
                     break;
@@ -116,7 +137,7 @@ public class ViewerServer : MonoBehaviour {
             string posmsg = "ASKPOS";
             foreach (int cl in clientIds)
             {
-                posmsg += '|' + cl.ToString() + '%' + players.getPlayerPosition(cl).ToString();
+                posmsg += '|' + cl.ToString() + '%' + players[cl].ToString();
             }
             posmsg.Trim('|');
             Send(posmsg, unreliableChannel, clientIds);
@@ -127,6 +148,9 @@ public class ViewerServer : MonoBehaviour {
     {
         switch (data[0])
         {
+            case "INIT":
+                OnInit(cnnId);
+                break;
             case "NAMEIS":
                 OnNameIs(cnnId, data[1]);
                 break;
@@ -137,14 +161,14 @@ public class ViewerServer : MonoBehaviour {
             case "DC":
                 break;
             case "MYPOS":
-                players.setPlayerPosition(cnnId, data[1]);
+                players[cnnId].StringToPlayer(data[1]);
                 break;
             case "ROOMRESOLVED":
                 rooms.OnDoorOpen(int.Parse(data[1]), 1);
                 Send("ROOMRESOLVED|" + data[1] + "|" + "1", reliableChannel, clientIds);
                 break;
             default:
-                Debug.Log("Invalid message: " + data);
+                Debug.Log("Invalid message: " + string.Join("|", data));
                 break;
         }
     }
@@ -152,24 +176,27 @@ public class ViewerServer : MonoBehaviour {
 
     private void OnNameIs(int cnnId, string playerName)
     {
-        players.setPlayerName(cnnId, playerName);
+        players[cnnId].playerName = playerName;
         //players[cnnId].avatar.GetComponentInChildren<TextMesh>().text = playerName;
         Send("CNN|" + playerName + '|' + cnnId, reliableChannel, clientIds);
         
     }
-
+    
     private void OnConnection(int cnnId)
     {
 
         string msg = "ASKNAME|" + cnnId + "|";
         foreach (int cl in clientIds)
         {
-            msg += players.getPlayerName(cl) + "%" + cl + "|";
+            msg += players[cl].playerName + "%" + cl + "|";
         }
         msg = msg.Trim('|');
-        players.SpawnPlayer("Anonym", cnnId);
+        
+        if(!players.ContainsKey(cnnId))players.Add(cnnId, new PlayerData());
+        Debug.LogError(players[cnnId]);
         Send(msg, reliableChannel, cnnId);
         clientIds.Add(cnnId);
+
         //msg =
 
         /*msg = "ROOM|" + "Prefabs/Room";
@@ -184,26 +211,58 @@ public class ViewerServer : MonoBehaviour {
             Send(msg, reliableChannel, cnnId);
         }*/
 
-        msg = "PAIRLOCK|" + "0|Prefabs/Obstacle";
-        foreach (var item in rooms.GetRoom(0).GetComponent<GenerateLVL>().player1)
+        
+    }
+    private void OnInit(int cnnId)
+    {
+        
+        
+        string msg = "";// + 0 + "|ADD|Prefabs/Obstacle";
+        foreach (var room in lvlgenerator.roomsData)
         {
-            msg += "|" + item.GetComponent<LockerButton>().id.ToString() + "%" + item.transform.position.ToString() + "%" + item.transform.localScale.ToString() + "%" + item.transform.rotation.ToString();
-            if(msg.Length> 500)
+            foreach (var item in room.player1)
+            {
+                switch (item.type)
+                {
+                    case GenerateLVL.ItemType.Locker:
+                        if (item.prefabName.Equals("PairLockHandler")) msg = "LOCK|PAIR%" + room.room.id.ToString();
+                        else if (item.prefabName.Equals("ColorLockHandler")) msg = "LOCK|PAIR%" + room.room.id.ToString();
+                        break;
+                    case GenerateLVL.ItemType.LockerButton:
+                        msg = "LOCK|" + room.room.id.ToString() + "|ADD|" + item.prefabName + "|" + item.gObject.GetComponent<LockerButton>().id.ToString() + "%" + item.gObject.transform.position.ToString() + "%" + item.gObject.transform.localScale.ToString() + "%" + item.gObject.transform.rotation.ToString();
+                        break;
+                    case GenerateLVL.ItemType.None:
+                        msg = "OBJECTS|" + room.room.id.ToString() + "|" + item.prefabName + "%" + item.gObject.transform.position.ToString() + "%" + item.gObject.transform.localScale.ToString() + "%" + item.gObject.transform.rotation.ToString();
+                        break;
+                }
+                Send(msg, reliableChannel, cnnId);
+            }
+
+            msg = "LOCK|" + room.room.id.ToString() + "|PASSWORD|";
+            foreach (var item in room.password) msg += item.ToString() + "%";
+            msg = msg.Trim('%');
+            msg += "|" + room.pswSegment.ToString();
+            Send(msg, reliableChannel, cnnId);
+
+        }
+
+        //Send(msg, reliableChannel, cnnId);
+
+
+        /*msg = "OBJECTS";
+        foreach (var item in rooms.GetRoom(0).GetComponent<GenerateLVL>().player2)
+        {
+            msg += "|" + "Prefabs/Obstacle" + "%" + item.transform.position.ToString() + "%" + item.transform.localScale.ToString() + "%" + item.transform.rotation.ToString();
+            if (msg.Length > 500)
             {
                 Send(msg, reliableChannel, cnnId);
-                msg = "PAIRLOCK|" + "0|Prefabs/Obstacle";
+                msg = "OBJECTS";
             }
         }
         //NetworkTransport.Se
-        Send(msg, reliableChannel, cnnId);
+        Send(msg, reliableChannel, cnnId);*/
 
-        msg = "LOCKPASSWORD|" + "0" + "|";
-        foreach (var item in rooms.GetRoom(0).GetComponent<GenerateLVL>().password) msg += item.ToString() + "%";
-        msg = msg.Trim('%');
-        msg += "|" + rooms.GetRoom(0).GetComponent<GenerateLVL>().individualNumber.ToString();
-        Send(msg, reliableChannel, cnnId);
     }
-
     private void Send(string message, int channelId, int cnnId)
     {
         List<int> c = new List<int>();

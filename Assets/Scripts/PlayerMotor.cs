@@ -32,10 +32,10 @@ public class PlayerMotor : MonoBehaviour
         avatar.headDir = camera.transform.forward;
 
         moveDirection += camera.transform.forward * InputControl.GetAxis(Controls.axes.vertical) * moveSpeed;
-        if (moveDirection != Vector3.zero)
-        {
-            avatar.moveDir = moveDirection;
-        }
+
+        moveDirection.y = 0;
+        avatar.moveDir = moveDirection;
+
 
         if (InputControl.GetButton(Controls.buttons.jump))
         {

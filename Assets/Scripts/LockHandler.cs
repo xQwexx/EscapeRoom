@@ -21,7 +21,6 @@ public abstract class LockHandler : MonoBehaviour {
 
     public void SetPassword(int[] psw, int individualNumber = 1)
     {
-        Debug.LogError(psw);
         indvNumber = individualNumber;
         for (int i = 0; i < psw.Length; i++)
         {
