@@ -654,10 +654,6 @@ Prefab:
       propertyPath: m_RootOrder
       value: 4
       objectReference: {fileID: 0}
-    - target: {fileID: 1052297875101156, guid: c6c8b29b56656024db9f861affeb0133, type: 2}
-      propertyPath: m_Name
-      value: GameSystem
-      objectReference: {fileID: 0}
     - target: {fileID: 114706498611907350, guid: c6c8b29b56656024db9f861affeb0133,
         type: 2}
       propertyPath: player
@@ -668,22 +664,11 @@ Prefab:
       propertyPath: player
       value: 
       objectReference: {fileID: 1984241709}
-    - target: {fileID: 114981378681932498, guid: c6c8b29b56656024db9f861affeb0133,
-        type: 2}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 1052297875101156, guid: c6c8b29b56656024db9f861affeb0133, type: 2}
-      propertyPath: m_TagString
-      value: GameController
+      propertyPath: m_Name
+      value: GameSystem
       objectReference: {fileID: 0}
-    - target: {fileID: 114932622921989418, guid: c6c8b29b56656024db9f861affeb0133,
-        type: 2}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 114932622921989418, guid: c6c8b29b56656024db9f861affeb0133, type: 2}
+    m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c6c8b29b56656024db9f861affeb0133, type: 2}
   m_IsPrefabAsset: 0
 --- !u!1 &1624878337

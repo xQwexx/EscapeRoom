@@ -60,8 +60,7 @@ GameObject:
   - component: {fileID: 114972664058437804}
   - component: {fileID: 114706498611907350}
   - component: {fileID: 114129545714571488}
-  - component: {fileID: 114981378681932498}
-  - component: {fileID: 114199104908139110}
+  - component: {fileID: 114285615520424822}
   m_Layer: 0
   m_Name: ObjectHandlerSystem 1
   m_TagString: GameController
@@ -1898,7 +1897,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   door: {fileID: 1592294547247758}
---- !u!114 &114199104908139110
+--- !u!114 &114285615520424822
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1906,10 +1905,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1052297875101156}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76f19dc13897a3a4cabb170cfe92dd41, type: 3}
+  m_Script: {fileID: 11500000, guid: a2e9318140fd2e445bbcbb4abaedf152, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  thing: {fileID: 1696480155261220, guid: b61f3ff70afcbf942b6dab5cc7405e86, type: 2}
+  reliable: 0
+  unreliable: 0
 --- !u!114 &114360736323232740
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1996,7 +1996,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseObject: {fileID: 1696480155261220, guid: b61f3ff70afcbf942b6dab5cc7405e86, type: 2}
-  player: {fileID: 1903999164106636, guid: 5c9128eb4df0ec442ae1c25ad4d4cff5, type: 2}
+  player: {fileID: 0}
 --- !u!114 &114710804706899038
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -2063,15 +2063,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerAvatarPrefab: {fileID: 1903999164106636, guid: 5c9128eb4df0ec442ae1c25ad4d4cff5,
     type: 2}
-  player: {fileID: 1903999164106636, guid: 5c9128eb4df0ec442ae1c25ad4d4cff5, type: 2}
---- !u!114 &114981378681932498
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1052297875101156}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a29a4c08cd9be0468ab844550c850c8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  player: {fileID: 0}

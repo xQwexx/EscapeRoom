@@ -12,17 +12,10 @@ using UnityEngine.UI;
 
 public class Client : MonoBehaviour {
 
-    private const int MAX_CONNECTION = 5;
-    private int port = 5701;
-
     private int hostId;
-    //private int webHostId;
-    private int connectionId;
+    private int serverHostId;
+    private NetworkConnection connection;
 
-    private float connectionTime;
-
-    private int reliableChannel;
-    private int unreliableChannel;
 
     private bool isStarted = false;
     private bool isConnected = false;
@@ -33,96 +26,43 @@ public class Client : MonoBehaviour {
     private ObjectsHandler objects;
     private RoomHandler rooms;
 
-
-    public void Connect(string pIp)
+    public void Init(NetworkConnection connection, int cnnId, int serverHostId)
     {
-        
-        
+        this.connection = connection;
+        this.hostId = cnnId;
+        this.serverHostId = serverHostId;
 
-        NetworkTransport.Init();
-        ConnectionConfig myConfig = new ConnectionConfig();
-
-        reliableChannel = myConfig.AddChannel(QosType.Reliable);
-        unreliableChannel = myConfig.AddChannel(QosType.Unreliable);
-        //myConfig.ConnectTimeout = 1000;
-        //myConfig.MaxConnectionAttempt = 5;
-
-        HostTopology topo = new HostTopology(myConfig, MAX_CONNECTION);
-
-        hostId = NetworkTransport.AddHost(topo, 0);
-        connectionId = NetworkTransport.Connect(hostId, pIp, port, 0, out error);//"192.168.0.175""127.0.0.1"
-        Debug.Log("Connect: " + pIp );
-        connectionTime = Time.time;
-        isConnected = true;
+        players = connection.gameObject.GetComponent<PlayersHandler>();
+        objects = connection.gameObject.GetComponent<ObjectsHandler>();
+        rooms = connection.gameObject.GetComponent<RoomHandler>();
     }
+
 
     internal void OnGrabObject(int objId, GameObject selectedObject)
     {
         string msg = "GRABOBJECT|" + players.getOurPlayerId().ToString() + '|' + objId.ToString() + '|' + selectedObject.transform.position.ToString() + '|' + selectedObject.transform.rotation.ToString();
-        Send(msg, unreliableChannel);
+        connection.Send(hostId, msg, connection.unreliable, serverHostId);
     }
 
     private void Start()
     {
         
         //Debug.Log("INIT Sended");
-        players = GetComponent<PlayersHandler>();
-        objects = GetComponent<ObjectsHandler>();
-        rooms = GetComponent<RoomHandler>();
+        
 
     }
 
-    private void Update()
+    
+
+    public string[] OnDataRecieved(string[] data)
     {
-        if (!isConnected) return;
-        //if (Time.time + 0.1f < connectionTime) isConnected = false;
-        int recHostId;
-        int connectionId;
-        int channelId;
-        byte[] recBuffer = new byte[2048];
-        int bufferSize = 2048;
-        int dataSize;
-        byte error;
-        var noEventsLeft = false;
-        while (!noEventsLeft)
-        {
-            NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
-
-            if ((NetworkError)error != NetworkError.Ok)
-            {
-                Debug.Log("NetworkTransport error: " + error);
-                return;
-            }
-
-            switch (recData)
-            {
-                case NetworkEventType.Nothing:
-                    noEventsLeft = true;
-                    break;
-                case NetworkEventType.DataEvent:
-                    string msg = Encoding.Unicode.GetString(recBuffer, 0, dataSize);
-                    //Debug.Log("Receiving: " + msg);
-                    string[] splitData = msg.Split('|');
-                    OnDataRecieved(splitData);
-                    
-                    connectionTime = Time.time;
-                    break;
-
-                case NetworkEventType.BroadcastEvent:
-
-                    break;
-            }
-        }
-    }
-
-    private void OnDataRecieved(string[] data)
-    {
-        Debug.Log("Client: " + connectionId + " recieved: " + string.Join("|", data));
+        if (data == null) return null;
+        Debug.Log("Client: " + hostId + " recieved: " + string.Join("|", data));
         switch (data[0])
         {
             case "CONNECTED":
                 //StartCoroutine(Loadlvl());
-                Send("INIT", reliableChannel);
+                connection.Send(hostId, "INIT", connection.reliable, serverHostId);
                 break;
             case "ASKNAME":
                 OnAskName(data);
@@ -163,10 +103,10 @@ public class Client : MonoBehaviour {
             case "GRABOBJECT":
                 break;
             case "ASKPOS":
-                if (!isStarted) return;
+                if (!isStarted) return null;
                 string msg = "MYPOS|" + players.setPlayersPosition(data);
                 Debug.Log(msg);
-                Send(msg, unreliableChannel);
+                connection.Send(hostId, msg, connection.unreliable, serverHostId);
                 break;
             case "ROOM":
                 //Debug.LogError(data[1]);
@@ -183,6 +123,8 @@ public class Client : MonoBehaviour {
                 Debug.LogWarning("Invalid message: " + string.Join("|", data));
                 break;
         }
+        Debug.Log("Cliens: " + hostId + " recieved from Server message: " + string.Join("|", data));
+        return null;
     }
 
     /*IEnumerator Loadlvl()
@@ -199,7 +141,7 @@ public class Client : MonoBehaviour {
     private void OnLockDataRecieved(string[] data)
     {
         LockHandler locker;
-        Debug.LogError("Locker: " + string.Join("|", data));
+        //Debug.LogError("Locker: " + string.Join("|", data));
         int lockId;
         if (int.TryParse(data[1], out lockId))
         {
@@ -234,8 +176,8 @@ public class Client : MonoBehaviour {
         {
             case "ADD":
                 //Debug.LogError(data[1]);
-                Debug.LogError("Locker: " + string.Join("|", data));
-                Debug.LogError(locker);
+                //Debug.LogError("Locker: " + string.Join("|", data));
+                //Debug.LogError(locker);
                 //Debug.LogError(string.Join("|", data));
                 int buttonCount = locker.transform.childCount - 4;
                 for (int i = 4; i < data.Length; i++)
@@ -275,7 +217,7 @@ public class Client : MonoBehaviour {
     {
         players.setOurPlayerId(int.Parse(data[1]));
 
-        Send("NAMEIS|" + players.getPlayerName(connectionId), reliableChannel);
+        connection.Send(hostId, "NAMEIS|" + players.getPlayerName(hostId), connection.reliable, serverHostId);
 
         for (int i = 2; i < data.Length; i++)
         {
@@ -288,7 +230,7 @@ public class Client : MonoBehaviour {
     public void OnRoomResolving(int roomId)
     {
         Debug.LogWarning("Resolved Room: " + roomId);
-        Send("ROOMRESOLVED|" + roomId.ToString(), reliableChannel);
+        connection.Send(hostId, "ROOMRESOLVED|" + roomId.ToString(), connection.reliable, serverHostId);
     }
 
     private Vector3 stringToVec(string s)
@@ -303,13 +245,6 @@ public class Client : MonoBehaviour {
         return new Quaternion(float.Parse(temp[0]), float.Parse(temp[1]), float.Parse(temp[2]), float.Parse(temp[3]));
     }
 
-
-    private void Send(string message, int channelId)
-    {
-        Debug.Log("Client Sending: " + message);
-        byte[] msg = Encoding.Unicode.GetBytes(message);
-        NetworkTransport.Send(hostId, connectionId, channelId, msg, message.Length * sizeof(char), out error);
-    }
 
     
     /*

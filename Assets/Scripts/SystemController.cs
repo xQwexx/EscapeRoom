@@ -55,8 +55,8 @@ public class SystemController : MonoBehaviour {
         ///StartCoroutine(LoadDevice("Cardboard"));
 
         StartCoroutine(LoadLevel("Main", "Cardboard"));
-        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<Client>());
-        GameObject.FindGameObjectWithTag("GameController").GetComponent<Client>().Connect(ipAddress);
+        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
+        //GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>().ConnectServer(ipAddress);
     }
     public void Exit()
     {
@@ -85,8 +85,10 @@ public class SystemController : MonoBehaviour {
           // GameObject.FindGameObjectWithTag("GameController").
            // GetComponent<ViewerServer>().Init();
         Debug.LogError(ipAddress);
-        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<Client>());
-        GameObject.FindGameObjectWithTag("GameController").GetComponent<Client>().Connect(ipAddress);
+        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
+        NetworkConnection network = GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>();
+        network.CreateServer();
+        network.ConnectServer(ipAddress);
     }
     
 
