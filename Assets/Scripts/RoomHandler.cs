@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -11,13 +12,17 @@ public class RoomHandler : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        client = GetComponent<Client>();
+        
         Room[] localrooms = GetComponentsInChildren<Room>();
         foreach(var room in localrooms)
         {
             roomCount++;
             rooms.Add(room.id, room);
         }
+    }
+    public void SetClient(Client client)
+    {
+        this.client = client;
     }
 
 
@@ -46,6 +51,11 @@ public class RoomHandler : MonoBehaviour {
             roomsResult[i++] = room.Value;
         }
         return roomsResult;
+    }
+
+    internal void OnRoomNotResolved(int roomId)
+    {
+        client.OnRoomNotResolving(roomId);
     }
 
     public int GetRoomCount()

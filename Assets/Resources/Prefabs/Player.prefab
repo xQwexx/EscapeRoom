@@ -918,7 +918,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerName: 
-  avatar: 
+  pos: {x: 0, y: 0, z: 0}
+  headDir: {x: 0, y: 0, z: 0}
+  moveDir: {x: 0, y: 0, z: 0}
   head: {fileID: 1585066765697926}
   body: {fileID: 1004852250301822}
   moveSpeed: 2
@@ -934,8 +936,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 53a0da89ffbd3f34bbbd17605dd3faa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
-  rotationSpeed: 5
 --- !u!120 &120246219234875108
 LineRenderer:
   m_ObjectHideFlags: 1
@@ -1053,4 +1053,4 @@ CharacterController:
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: -0.7, z: 0}
+  m_Center: {x: 0, y: 0.7, z: 0}

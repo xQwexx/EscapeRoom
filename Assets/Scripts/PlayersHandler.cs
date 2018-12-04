@@ -88,7 +88,8 @@ public class PlayersHandler : MonoBehaviour {
     }
     public string getPlayerName(int cnnId)
     {
-        return "adsads";//players[cnnId].playerName;
+        if (!players.ContainsKey(cnnId)) return "Anonymus";
+        return players[cnnId].playerName;
     }
 
     public void setPlayerName(int cnnId, string name)

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class LockHandler : MonoBehaviour {
-    protected List<int> password = new List<int>();
+    public List<int> password = new List<int>();
     protected int counter = 0;
     protected Room room;
 

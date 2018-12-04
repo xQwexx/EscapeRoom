@@ -12,36 +12,35 @@ using UnityEngine.Networking.Types;
 public class Server : MonoBehaviour {
 
     NetworkConnection connection;
-    private int hostId;
 
     private bool isStarted = false;
     private byte error;
     private string ipAddress;
     public GameObject thing;
 
+    private Dictionary<int, int> playersImageRoomResolved = new Dictionary<int, int>();
 
-    
     private List<int> clientIds;
     private Dictionary<int, PlayerData> players;
     private ObjectsHandler objects;
     private RoomHandler rooms;
     private GenerateLVL lvlgenerator;
 
-    public void Init(NetworkConnection connection, int cnnId)
+    public void Init(NetworkConnection connection)
     {
         this.connection = connection;
-        this.hostId = cnnId;
-        players = new Dictionary<int, PlayerData>();
-        objects = FindObjectOfType<ObjectsHandler>();
-        rooms = FindObjectOfType<RoomHandler>();
-        NetworkTransport.Init();
-        ConnectionConfig cc = new ConnectionConfig();
 
+        players = new Dictionary<int, PlayerData>();
+        //objects = FindObjectOfType<ObjectsHandler>();
+        //rooms = FindObjectOfType<RoomHandler>();
+
+        //objects = connection.gameObject.GetComponent<ObjectsHandler>();
+        rooms = connection.gameObject.GetComponent<RoomHandler>();
         clientIds = new List<int>();
         isStarted = true;
         lvlgenerator = new GenerateLVL();
         lvlgenerator.Generate(rooms);
-        System.Random rnd = new System.Random();
+        Debug.LogError("lvlgenerator run");
     }
 
     private void Start()
@@ -69,7 +68,7 @@ public class Server : MonoBehaviour {
             posmsg += '|' + cl.ToString() + '%' + players[cl].ToString();
         }
         posmsg.Trim('|');
-        connection.Send(hostId, posmsg, connection.unreliable, clientIds);
+        connection.Send(posmsg, connection.unreliable, clientIds);
 
     }
 
@@ -81,23 +80,36 @@ public class Server : MonoBehaviour {
         switch (data[0])
         {
             case "INIT":
-                OnInit(cnnId);
+                //OnInit(cnnId, 1);
+                OnConnection(cnnId);
                 break;
             case "NAMEIS":
                 OnNameIs(cnnId, data[1]);
                 break;
             case "GRABOBJECT":
                 objects.SetObjectPlace(int.Parse(data[2]), stringToVec(data[3]), stringToQuat(data[4]));
-                connection.Send(hostId, data[0] + "|" + data[1] + "|" + data[2] + "|" + data[3] + "|" + data[4], connection.unreliable, clientIds);
-                break;
-            case "DC":
+                connection.Send( "GRABBED|" + data[1] + "|" + data[2] + "|" + data[3] + "|" + data[4], connection.unreliable, clientIds);
                 break;
             case "MYPOS":
                 players[cnnId].StringToPlayer(data[1]);
                 break;
-            case "ROOMRESOLVED":
-                rooms.OnDoorOpen(int.Parse(data[1]), 1);
-                connection.Send(hostId, "ROOMRESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
+            case "ROOMRESOLVING":
+                if (lvlgenerator.neededResult[int.Parse(data[1])] == 1)
+                {
+                    //rooms.OnDoorOpen(int.Parse(data[1]), 1);
+                    connection.Send("ROOMRESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
+                }
+                else
+                {
+                    if (!playersImageRoomResolved.ContainsKey(cnnId))
+                    {
+                        playersImageRoomResolved.Add(cnnId, 1);
+                        if(playersImageRoomResolved.Count == 2) connection.Send("ROOMRESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
+                    }
+                }
+                break;
+            case "ROOMNOTRESOLVED":
+                if (playersImageRoomResolved.ContainsKey(cnnId)) playersImageRoomResolved.Remove(cnnId);
                 break;
             default:
                 // Not server case Handling
@@ -110,27 +122,33 @@ public class Server : MonoBehaviour {
 
     private void OnNameIs(int cnnId, string playerName)
     {
+        if (clientIds.Contains(cnnId)) return;
+        players.Add(cnnId, new PlayerData());
+        clientIds.Add(cnnId);
         players[cnnId].playerName = playerName;
         //players[cnnId].avatar.GetComponentInChildren<TextMesh>().text = playerName;
-        connection.Send(hostId, "CNN|" + playerName + '|' + cnnId, connection.reliable, clientIds);
+        connection.Send("CNN|" + playerName + '|' + cnnId, connection.reliable, clientIds);
+       
+        
+        //Debug.LogError(players[cnnId]);
+        
         
     }
     
     public void OnConnection(int cnnId)
     {
-
+        
+        if (clientIds.Contains(cnnId)) return;
+        //Debug.LogError(cnnId);
         string msg = "ASKNAME|" + cnnId + "|";
         foreach (int cl in clientIds)
         {
             msg += players[cl].playerName + "%" + cl + "|";
         }
         msg = msg.Trim('|');
-        
-        if(!players.ContainsKey(cnnId))players.Add(cnnId, new PlayerData());
-        Debug.LogError(players[cnnId]);
-        connection.Send(hostId, msg, connection.reliable, cnnId);
-        clientIds.Add(cnnId);
+        connection.Send(msg, connection.reliable, cnnId);
 
+        //if (!players.ContainsKey(cnnId)) 
         //msg =
 
         /*msg = "ROOM|" + "Prefabs/Room";
@@ -145,7 +163,7 @@ public class Server : MonoBehaviour {
             Send(msg, reliableChannel, cnnId);
         }*/
 
-        
+
     }
 
     public void RemovePlayer(int playerCnnId)
@@ -153,44 +171,105 @@ public class Server : MonoBehaviour {
         Debug.Log("Player " + playerCnnId + " has disconnected");
         players.Remove(playerCnnId);
         clientIds.Remove(playerCnnId);
-        connection.Send(hostId, "DC|" + playerCnnId, connection.reliable, clientIds);
+        connection.Send("DC|" + playerCnnId, connection.reliable, clientIds);
     }
 
-    private void OnInit(int cnnId)
+    public void OnInitMap(int cnnId)
     {
-        
-        
-        string msg = "";// + 0 + "|ADD|Prefabs/Obstacle";
-        foreach (var room in lvlgenerator.roomsData)
+    string msg = "";
+        if (cnnId % 2 == 0)
         {
-            foreach (var item in room.player1)
+            foreach (var room in lvlgenerator.roomsData)
             {
-                switch (item.type)
+                switch (room.locker.type)
                 {
-                    case GenerateLVL.ItemType.Locker:
-                        if (item.prefabName.Equals("PairLockHandler")) msg = "LOCK|PAIR%" + room.room.id.ToString() + "|ADD";
-                        else if (item.prefabName.Equals("ColorLockHandler")) msg = "LOCK|PAIR%" + room.room.id.ToString() + "|ADD";
+                    case GenerateLVL.ItemType.PairLocker:
+                        msg = "LOCK|PAIR%" + room.room.id.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
+                        foreach (var item in room.player1)
+                        {
+                            //Debug.LogError(item.gObject.transform.position);
+                            switch (item.type)
+                            {
+                                case GenerateLVL.ItemType.LockerButton:
+                                    msg = "LOCK|" + room.room.id.ToString() + "|ADD|" + item.prefabName + "|" + item.id.ToString() + "%" + item.position.ToString();// + "%" + item.gObject.transform.localScale.ToString() + "%" + item.gObject.transform.rotation.ToString();
+                                    break;
+                                case GenerateLVL.ItemType.None:
+                                    msg = "OBJECTS|" + room.room.id.ToString() + "|" + item.prefabName + "%" + item.position.ToString() + "%" + item.localScale.ToString() + "%" + item.rotation.ToString();
+                                    break;
+                            }
+                            connection.Send(msg, connection.reliable, cnnId);
+                        }
+
+                        msg = "LOCK|" + room.room.id.ToString() + "|PASSWORD|";
+                        foreach (var item in room.password) msg += item.ToString() + "%";
+                        msg = msg.Trim('%');
+                        msg += "|" + room.pswSegment.ToString();
+                        connection.Send(msg, connection.reliable, cnnId);
                         break;
-                    case GenerateLVL.ItemType.LockerButton:
-                        msg = "LOCK|" + room.room.id.ToString() + "|ADD|" + item.prefabName + "|" + item.gObject.GetComponent<LockerButton>().id.ToString() + "%" + item.gObject.transform.position.ToString() + "%" + item.gObject.transform.localScale.ToString() + "%" + item.gObject.transform.rotation.ToString();
+                    case GenerateLVL.ItemType.ColorLocker:
+                        msg = "LOCK|COLOR%" + room.room.id.ToString() + "%" + room.locker.position.ToString() + "|"; //+ "%" + room.locker.gObject.transform.rotation.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
+
+                        msg = "LOCK|" + room.room.id.ToString() + "|PASSWORD|";
+                        foreach (var item in room.password) msg += item.ToString() + "%";
+                        msg = msg.Trim('%');
+                        msg += "|" + room.pswSegment.ToString();
+                        connection.Send(msg, connection.reliable, cnnId);
                         break;
-                    case GenerateLVL.ItemType.None:
-                        msg = "OBJECTS|" + room.room.id.ToString() + "|" + item.prefabName + "%" + item.gObject.transform.position.ToString() + "%" + item.gObject.transform.localScale.ToString() + "%" + item.gObject.transform.rotation.ToString();
+                    case GenerateLVL.ItemType.ImageLocker:
+                        msg = "LOCK|IMAGE%" + room.room.id.ToString() + "%" + room.locker.position.ToString() + "|" + room.password[0] + "|"; //+ "%" + room.locker.gObject.transform.rotation.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
+
+                        //msg = "LOCK|" + room.room.id.ToString() + "|PASSWORD|" + room.password[0] + "|1";
+                        //connection.Send(msg, connection.reliable, cnnId);
                         break;
+
+
                 }
-                connection.Send(hostId, msg, connection.reliable, cnnId);
+
+
             }
-
-            msg = "LOCK|" + room.room.id.ToString() + "|PASSWORD|";
-            foreach (var item in room.password) msg += item.ToString() + "%";
-            msg = msg.Trim('%');
-            msg += "|" + room.pswSegment.ToString();
-            connection.Send(hostId, msg, connection.reliable, cnnId);
-
         }
+        else
+        {
+            foreach (var room in lvlgenerator.roomsData)
+            {
+                switch (room.locker.type)
+                {
+                    case GenerateLVL.ItemType.PairLocker:
+                        msg = "LOCK|PAIR%" + room.room.id.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
+                        foreach (var item in room.player2)
+                        {
+                            //Debug.LogError(item.gObject.transform.position);
+                            switch (item.type)
+                            {
+                                case GenerateLVL.ItemType.None:
+                                    msg = "OBJECTS|" + room.room.id.ToString() + "|" + item.prefabName + "%" + item.position.ToString() + "%" + item.localScale.ToString() + "%" + item.rotation.ToString();
+                                    break;
+                            }
+                            connection.Send(msg, connection.reliable, cnnId);
+                        }
+                        break;
+                    case GenerateLVL.ItemType.ColorLocker:
+                        msg = "TEXT|" + room.room.id.ToString() + "|" + room.player2[0].prefabName + "%" + room.player2[0].position.ToString() + "|";// + "%" + room.player2[0].gObject.transform.rotation.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
 
+                        break;
+                    case GenerateLVL.ItemType.ImageLocker:
+                        msg = "LOCK|IMAGE%" + room.room.id.ToString() + "%" + room.locker.position.ToString() + "|" + room.password[1] + "|";// + "%" + room.locker.gObject.transform.rotation.ToString() + "|";
+                        connection.Send(msg, connection.reliable, cnnId);
+                        break;
+
+
+                }
+
+
+            }
+        }
         //Send(msg, reliableChannel, cnnId);
-
+        connection.Send("CONNECTED", connection.reliable, cnnId);
 
         /*msg = "OBJECTS";
         foreach (var item in rooms.GetRoom(0).GetComponent<GenerateLVL>().player2)
@@ -206,7 +285,7 @@ public class Server : MonoBehaviour {
         Send(msg, reliableChannel, cnnId);*/
 
     }
-    
+
     private Vector3 stringToVec(string s)
     {
         string[] temp = s.Substring(1, s.Length - 2).Split(',');

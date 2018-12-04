@@ -8,15 +8,14 @@ public class ObjectsHandler : MonoBehaviour {
     public GameObject baseObject;
     public GameObject player;
     public Dictionary<int, GameObject> objects = new Dictionary<int, GameObject>();
-    private PlayerMotor camera;
+    private PlayerMotor playerMotor;
 
     private Client client;
 
     private bool isSelected = false;
     // Use this for initialization
     void Start () {
-        client = GetComponent<Client>();
-        camera = player.GetComponent<PlayerMotor>();
+        playerMotor = player.GetComponent<PlayerMotor>();
         //Debug.Log(" alksdfasssssssssjh" + camera);
     }
 	
@@ -31,12 +30,18 @@ public class ObjectsHandler : MonoBehaviour {
         if (selectedObject == null || !isSelected) return;
         //camera = player.GetComponentInChildren<Camera>().gameObject;
         //objectHandlerSystem.OnGrabObject(selectedObject);
-        camera.onGrabObject(selectedObject);
+        playerMotor.onGrabObject(selectedObject);
 
         client.OnGrabObject(selectedObject.GetComponent<ObjectController>().id, selectedObject);
 
 
     }
+
+    internal void SetClient(Client client)
+    {
+        this.client = client;
+    }
+
     public void OnObjectSelected(GameObject selected)
     {
         Debug.Log("Selected: " + selected);

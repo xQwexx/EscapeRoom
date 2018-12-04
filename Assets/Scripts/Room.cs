@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,7 +23,12 @@ public class Room : MonoBehaviour {
             dim.z = ((item.bounds.size.z).CompareTo(dim.z) == 1) ? item.bounds.size.z : dim.z;
         }
     }
-	
+
+    internal void OnRoomNotResolved()
+    {
+        handler.OnRoomNotResolved(id);
+    }
+
     public void OnDoorOpen(int doorId)
     {
         if (doorId > doors.Length -1) doorId = 0;

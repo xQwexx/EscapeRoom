@@ -11,9 +11,10 @@ public class SystemController : MonoBehaviour {
     AsyncOperation asyncLoadLevel;
     private Text statusOutput;
     bool created = false;
+    bool isServer = false;
     string ipAddress;
+    string pName;
     bool isVrEnabled;
-    int isLoaded;
     // Use this for initialization
     void Start () {
         statusOutput = GameObject.Find("StatusOutput").GetComponent<Text>();
@@ -32,30 +33,30 @@ public class SystemController : MonoBehaviour {
 
     public void CreateServer()
     {
-        isLoaded = 2;
         statusOutput.text = "Loading...";
+        pName = GameObject.Find("NameInput").GetComponent<InputField>().text;
         ipAddress = "127.0.0.1";
         isVrEnabled = false;
+        isServer = true;
         //StartCoroutine(LoadDevice("cardboard"));
         StartCoroutine(LoadLevel("Server", "Cardboard"));
         
     }
     public void ConnectToServer()
     {
-        isLoaded = 2;
         statusOutput.text = "Loading...";
-        string pName = GameObject.Find("NameInput").GetComponent<InputField>().text;
+        pName = GameObject.Find("NameInput").GetComponent<InputField>().text;
         if (pName == "")
         {
             statusOutput.text = "You must enter a name!";
             return;
         }
-        
+        ipAddress = "127.0.0.1";
         isVrEnabled = true;
         ///StartCoroutine(LoadDevice("Cardboard"));
 
-        StartCoroutine(LoadLevel("Main", "Cardboard"));
-        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
+        StartCoroutine(LoadLevel("Server", "Cardboard"));
+        //Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
         //GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>().ConnectServer(ipAddress);
     }
     public void Exit()
@@ -80,14 +81,14 @@ public class SystemController : MonoBehaviour {
             yield return null;   
         }
         //gameObject.AddComponent<ViewerServer>();
-
+        GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Player>().SetPlayerName(pName);
         //ViewerServer gameSystem = 
-          // GameObject.FindGameObjectWithTag("GameController").
-           // GetComponent<ViewerServer>().Init();
-        Debug.LogError(ipAddress);
-        Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
-        NetworkConnection network = GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>();
-        network.CreateServer();
+        // GameObject.FindGameObjectWithTag("GameController").
+        // GetComponent<ViewerServer>().Init();
+        Debug.LogError(GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Player>());
+        //Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
+        var network = GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>();
+        if(isServer) network.CreateServer();
         network.ConnectServer(ipAddress);
     }
     

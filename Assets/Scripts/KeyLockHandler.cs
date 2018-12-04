@@ -6,9 +6,6 @@ public class KeyLockHandler : LockHandler {
     void Start()
     {
         room = GetComponentInParent<Room>();
-        password.Add(1);
-        password.Add(1);
-        password.Add(2);
     }
 
     public override void OnButtonSelected(int selected)

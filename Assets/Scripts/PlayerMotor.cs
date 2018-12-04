@@ -7,10 +7,7 @@ public class PlayerMotor : MonoBehaviour
 {
 
     private CharacterController controller;
-    private Camera camera;
-    public float moveSpeed = 2f;
-    public float rotationSpeed = 3f;
-    public GvrPointerInputModuleImpl raytrace;
+    private Camera playerCamera;
     private Player avatar;
 
     
@@ -19,7 +16,7 @@ public class PlayerMotor : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
-        camera = GetComponentInChildren<Camera>();
+        playerCamera = GetComponentInChildren<Camera>();
         avatar = GetComponentInChildren<Player>();
     }
 
@@ -27,11 +24,11 @@ public class PlayerMotor : MonoBehaviour
     void Update()
     {
         Vector3 moveDirection = Vector3.zero;
-        moveDirection = camera.transform.right * InputControl.GetAxis(Controls.axes.horizontal) * moveSpeed;
+        moveDirection = playerCamera.transform.right * InputControl.GetAxis(Controls.axes.horizontal) * avatar.moveSpeed;
 
-        avatar.headDir = camera.transform.forward;
+        avatar.headDir = playerCamera.transform.forward;
 
-        moveDirection += camera.transform.forward * InputControl.GetAxis(Controls.axes.vertical) * moveSpeed;
+        moveDirection += playerCamera.transform.forward * InputControl.GetAxis(Controls.axes.vertical) * avatar.moveSpeed;
 
         moveDirection.y = 0;
         avatar.moveDir = moveDirection;
@@ -52,19 +49,19 @@ public class PlayerMotor : MonoBehaviour
 
         //if (InputControl.GetButton(Controls.buttons.fire1)) ExecuteEvents.Execute<IPointerClickHandler>(raytrace.GetCurrentGameObject(), new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
     }
-    public Transform getCameraTranform()
+    /*public Transform getCameraTranform()
     {
         //Debug.Log(" alkdasssssssssssssssssssssssssssssssssssssssssssssdfjh" + camera.transform);
         return camera.transform;
-    }
+    }*/
 
     public void onGrabObject(GameObject selectedObject)
     {
-        selectedObject.transform.position = transform.position + camera.transform.forward * 2f;
-        Debug.Log(" utania" + selectedObject.transform.position);
+        selectedObject.transform.position = transform.position + playerCamera.transform.forward * 2f;
+        //Debug.Log(" utania" + selectedObject.transform.position);
         Vector3 rotation = new Vector3();
-        rotation = camera.transform.up * InputControl.GetAxis(Controls.axes.mouseX);
-        rotation -= camera.transform.forward * InputControl.GetAxis(Controls.axes.mouseY);
+        rotation = playerCamera.transform.up * InputControl.GetAxis(Controls.axes.mouseX);
+        rotation -= playerCamera.transform.forward * InputControl.GetAxis(Controls.axes.mouseY);
         selectedObject.transform.Rotate(rotation * 2000f * Time.deltaTime, Space.Self);
     }
 }

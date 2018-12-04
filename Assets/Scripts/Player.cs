@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Player : PlayerData
 {
@@ -44,5 +45,10 @@ public class Player : PlayerData
 
         //if (InputControl.GetButton(Controls.buttons.fire1)) ExecuteEvents.Execute<IPointerClickHandler>(raytrace.GetCurrentGameObject(), new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
     }
-    
+    public void SetPlayerName(string name)
+    {
+        playerName = name;
+        GetComponentInChildren<Text>().text = name;
+    }
+
 }

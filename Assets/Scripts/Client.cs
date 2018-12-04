@@ -13,7 +13,6 @@ using UnityEngine.UI;
 public class Client : MonoBehaviour {
 
     private int hostId;
-    private int serverHostId;
     private NetworkConnection connection;
 
 
@@ -26,23 +25,26 @@ public class Client : MonoBehaviour {
     private ObjectsHandler objects;
     private RoomHandler rooms;
 
-    public void Init(NetworkConnection connection, int cnnId, int serverHostId)
+    public void Init(NetworkConnection connection, int cnnId)
     {
         this.connection = connection;
         this.hostId = cnnId;
-        this.serverHostId = serverHostId;
 
         players = connection.gameObject.GetComponent<PlayersHandler>();
         objects = connection.gameObject.GetComponent<ObjectsHandler>();
+        objects.SetClient(this);
         rooms = connection.gameObject.GetComponent<RoomHandler>();
+        rooms.SetClient(this);
     }
 
 
     internal void OnGrabObject(int objId, GameObject selectedObject)
     {
         string msg = "GRABOBJECT|" + players.getOurPlayerId().ToString() + '|' + objId.ToString() + '|' + selectedObject.transform.position.ToString() + '|' + selectedObject.transform.rotation.ToString();
-        connection.Send(hostId, msg, connection.unreliable, serverHostId);
+        connection.Send(msg, connection.unreliable, hostId);
     }
+
+    
 
     private void Start()
     {
@@ -60,9 +62,14 @@ public class Client : MonoBehaviour {
         Debug.Log("Client: " + hostId + " recieved: " + string.Join("|", data));
         switch (data[0])
         {
+            case "ASKPOS":
+                if (!isStarted) return null;
+                string msg = "MYPOS|" + players.setPlayersPosition(data);
+                connection.Send(msg, connection.unreliable, hostId);
+                break;
             case "CONNECTED":
                 //StartCoroutine(Loadlvl());
-                connection.Send(hostId, "INIT", connection.reliable, serverHostId);
+                connection.Send("INIT", connection.reliable, hostId);
                 break;
             case "ASKNAME":
                 OnAskName(data);
@@ -88,8 +95,10 @@ public class Client : MonoBehaviour {
                 {
                     string[] d = data[i].Split('%');
                     Debug.Log(data[i]);
-                    GameObject o = Instantiate(Resources.Load<GameObject>(d[0]), stringToVec(d[1]), stringToQuat(d[3]));
+                    GameObject o = Instantiate(Resources.Load<GameObject>(d[0]));
+                    o.transform.position = stringToVec(d[1]);
                     o.transform.localScale = stringToVec(d[2]);
+                    o.transform.rotation = stringToQuat(d[3]);
                 }
                 break;
             case "MOVEOBJECT":
@@ -100,13 +109,17 @@ public class Client : MonoBehaviour {
                     objects.SetObjectPlace(int.Parse(d[0]),  stringToVec(d[1]), stringToQuat(d[2]));
                 }
                 break;
-            case "GRABOBJECT":
+            case "TEXT":
+                {
+                    string[] d = data[2].Split('%');
+                    Debug.Log(data[2]);
+                    GameObject t = Instantiate(Resources.Load<GameObject>("Prefabs/TextOutput"));
+                    t.transform.position = stringToVec(d[1]);
+                    t.transform.parent = rooms.GetRoom(int.Parse(data[1])).transform;
+                    t.GetComponentInChildren<Text>().text = d[0];
+                }
                 break;
-            case "ASKPOS":
-                if (!isStarted) return null;
-                string msg = "MYPOS|" + players.setPlayersPosition(data);
-                Debug.Log(msg);
-                connection.Send(hostId, msg, connection.unreliable, serverHostId);
+            case "GRABBED":
                 break;
             case "ROOM":
                 //Debug.LogError(data[1]);
@@ -123,7 +136,7 @@ public class Client : MonoBehaviour {
                 Debug.LogWarning("Invalid message: " + string.Join("|", data));
                 break;
         }
-        Debug.Log("Cliens: " + hostId + " recieved from Server message: " + string.Join("|", data));
+        //Debug.Log("Cliens: " + hostId + " recieved from Server message: " + string.Join("|", data));
         return null;
     }
 
@@ -157,15 +170,24 @@ public class Client : MonoBehaviour {
             switch (d[0])
             {
                 case "COLOR":
-                    locker = Resources.Load<GameObject>("Prefabs/ColorLock").GetComponent<KeyLockHandler>();
-                    //locker.name = "ColorLock";
+                    locker = GameObject.Instantiate(Resources.Load<GameObject>("Prefabs/ColorLock")).GetComponent<KeyLockHandler>();
+                    locker.name = "ColorLock";
                     locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(d[1])).transform;
                     locker.gameObject.transform.position = stringToVec(d[2]);
+                    //locker.gameObject.transform.rotation = stringToQuat(d[3]);
                     break;
                 case "PAIR":
                     locker = new GameObject().AddComponent<PairLockHandler>();
                     locker.name = "PairLock";
                     locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(d[1])).transform;
+                    break;
+                case "IMAGE":
+                    locker = GameObject.Instantiate(Resources.Load<GameObject>("Prefabs/Images")).GetComponent<ImageHandler>();
+                    locker.name = "ImageLock";
+                    locker.gameObject.transform.parent = rooms.GetRoom(int.Parse(d[1])).transform;
+                    locker.gameObject.transform.position = stringToVec(d[2]);
+                    locker.SetPassword(new int[]{ int.Parse(data[2])}, 1);
+                    //locker.gameObject.transform.rotation = stringToQuat(d[3]);
                     break;
                 default:
                     Debug.LogError("Invalid message: " + string.Join("|", data));
@@ -183,16 +205,17 @@ public class Client : MonoBehaviour {
                 for (int i = 4; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
-                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[3])).AddComponent<LockerButton>();
+                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[3])).GetComponent<LockerButton>();
                     button.gameObject.transform.parent = locker.gameObject.transform;
                     button.gameObject.transform.position = stringToVec(d[1]);
-                    button.gameObject.transform.localScale = stringToVec(d[2]);
-                    button.gameObject.transform.rotation = stringToQuat(d[3]);
+                    //button.gameObject.transform.localScale = stringToVec(d[2]);
+                    //button.gameObject.transform.LookAt(stringToVec(d[3]));
                     button.id = buttonCount + i;// int.Parse(d[0]);
                     button.SetLockerHandler(locker);
                     Material mat = (Material)Resources.Load("Material/Blue", typeof(Material)); ;
                     //mat.SetColor("_SpecColor", Color.red);
                     button.GetComponent<LockerButton>().SetSelected(mat);
+                    button.gameObject.SetActive(true);
 
                 }
                 //Instantiate(Resources.Load<GameObject>(data[1]));
@@ -202,8 +225,8 @@ public class Client : MonoBehaviour {
                 //PairLockHandler locker;
                 Debug.LogError(string.Join("|", data));
                 int[] password = Array.ConvertAll(data[3].Split('%'), delegate (string s) { return int.Parse(s); });
-                Debug.LogError(password.Length);
-                Debug.LogWarning("Invalid message: " + string.Join("|", data[3].Split('%')));
+                //Debug.LogError(password.Length);
+                //Debug.LogWarning("Invalid message: " + string.Join("|", data[3].Split('%')));
                 locker.SetPassword(password, int.Parse(data[4]));
                 //Instantiate(Resources.Load<GameObject>(data[1]));
                 break;
@@ -215,9 +238,11 @@ public class Client : MonoBehaviour {
 
     private void OnAskName(string[] data)
     {
+        //Debug.LogError("hostID: "+ data[1]);
+       // if (int.Parse(data[1]) != hostId) return;
         players.setOurPlayerId(int.Parse(data[1]));
 
-        connection.Send(hostId, "NAMEIS|" + players.getPlayerName(hostId), connection.reliable, serverHostId);
+        connection.Send("NAMEIS|" + players.getPlayerName(hostId), connection.reliable, hostId);
 
         for (int i = 2; i < data.Length; i++)
         {
@@ -230,7 +255,12 @@ public class Client : MonoBehaviour {
     public void OnRoomResolving(int roomId)
     {
         Debug.LogWarning("Resolved Room: " + roomId);
-        connection.Send(hostId, "ROOMRESOLVED|" + roomId.ToString(), connection.reliable, serverHostId);
+        connection.Send("ROOMRESOLVING|" + roomId.ToString(), connection.reliable, hostId);
+    }
+
+    internal void OnRoomNotResolving(int roomId)
+    {
+        connection.Send("ROOMNOTRESOLVED|" + roomId.ToString(), connection.reliable, hostId);
     }
 
     private Vector3 stringToVec(string s)
