@@ -8,6 +8,8 @@ public class GenerateLVL {
     const int PAIR_ITEM_PIECE_COUNT = 30;
     const string PAIR_ITEM_PREFAB = "Prefabs/Obstacle";
 
+    public List<RoomData> roomsData = new List<RoomData>();
+
     public enum ItemType
     {
         PairLocker,
@@ -21,7 +23,6 @@ public class GenerateLVL {
     {
         public ItemType type;
         public string prefabName;
-        //public GameObject gObject;
         public int id;
         public Vector3 position;
         public Vector3 localScale;
@@ -29,18 +30,14 @@ public class GenerateLVL {
     }
     public struct RoomData{
         public Room room;
+        public int neededResult;
         public Item locker;
         public List<Item> player1;
         public List<Item> player2;
         public int[] password;
         public int pswSegment;
     }
-    public List<RoomData> roomsData = new List<RoomData>();
-
-    LockHandler locker;
-    public Material selectedMaterial;
-    public int[] neededResult = new int[3];
-    // Use this for initialization
+    
 
     public void Generate(RoomHandler rooms)
     {
@@ -63,21 +60,15 @@ public class GenerateLVL {
             {
                 case 0:
                     CreatePair(i);
-                    neededResult[i] = 1;
                     break;
                 case 1:
                     
                     ColorText(i);
-                    neededResult[i] = 1;
                     break;
                 case 2:
-                    neededResult[i] = 2;
                     Item locker = new Item();
                     locker.type = ItemType.ImageLocker;
                     locker.prefabName = "Prefabs/Images";
-                    //locker.gObject = GameObject.Instantiate(Resources.Load<GameObject>("Prefabs/Images").gameObject);
-                    //locker.gObject.SetActive(false);
-                    //locker.gObject.transform.position += roomsData[i].room.transform.position;
                     locker.position = roomsData[i].room.transform.position;
 
                     RoomData data = new RoomData();
@@ -87,6 +78,7 @@ public class GenerateLVL {
                     data.password[0] = Random.Range(0, count);
                     data.password[1] = Random.Range(0, count);
                     data.room = roomsData[i].room;
+                    data.neededResult = 2;
                     roomsData[i] = data;
 
                     break;
@@ -98,23 +90,13 @@ public class GenerateLVL {
 
     }
 
-    public void CreatePair(int roomIndex)
+    private void CreatePair(int roomIndex)
     {
         
         float border = 0.3f;
         Vector3 dim = roomsData[roomIndex].room.GetRoomDimension();
-        //Debug.LogError(roomsData[roomIndex].room.GetRoomDimension());
-        //locker = new GameObject().AddComponent<PairLockHandler>();
-        //locker.gameObject.SetActive(false);
-       // locker.transform.parent = roomsData[roomIndex].room.gameObject.transform;
-        //roomsData[roomIndex].player1.Add(new Item { type = ItemType.PairLocker, prefabName = "PairLockHandler", gObject = locker.gameObject });
         Item locker = new Item();
         locker.type = ItemType.PairLocker;
-        //locker.gObject = GameObject.Instantiate(Resources.Load<GameObject>("Prefabs/ColorLock").gameObject);
-        //locker.gObject.SetActive(false);
-
-        //Vector3 dim = roomsData[roomIndex].room.GetRoomDimension();
-        //locker.gObject.transform.
         locker.position = roomsData[roomIndex].room.transform.position + new Vector3(-(dim.x / 2 - 0.2f), dim.y / 2, dim.z / 4);
 
         RoomData data = new RoomData();
@@ -123,6 +105,7 @@ public class GenerateLVL {
         data.password = new int[2 * PAIR_ITEM_COUNT];
         data.pswSegment = 2;
         data.room = roomsData[roomIndex].room;
+        data.neededResult = 1;
 
         Vector3 roomPos = roomsData[roomIndex].room.transform.position;
         for (int i = 0; i < PAIR_ITEM_PIECE_COUNT; i++)
@@ -131,25 +114,18 @@ public class GenerateLVL {
             pos.x = Random.Range(roomPos.x - dim.x/2 + border, roomPos.x + dim.x/2 - border);
             pos.y = 0;
             pos.z = Random.Range(roomPos.z - dim.z / 2 + border, roomPos.z + dim.z / 2 - border);
-            //Debug.LogError(pos);
-            //Debug.LogError(obstacle);
+
             Item temp = new Item();
             temp.type = ItemType.LockerButton;
             temp.prefabName = PAIR_ITEM_PREFAB;
-            //temp.gObject = GameObject.Instantiate(Resources.Load<GameObject>(PAIR_ITEM_PREFAB).gameObject);
-            //temp.gObject.SetActive(false);
-            //temp.gObject.transform.SetParent(locker.gameObject.transform);
             temp.position = pos;
             temp.id = i;
-            //temp.gObject.transform.position = pos;
-            //temp.gObject.AddComponent<LockerButton>().id = i;
-            //temp.gObject.GetComponent<LockerButton>().SetSelected(selectedMaterial);
-            
+
             data.player1.Add(temp);
         }
         
         int counter = 0;
-        //int[] password = new int[2 * pswLength];
+
         while (counter < PAIR_ITEM_COUNT)
         {
             bool newPair = true;
@@ -157,9 +133,8 @@ public class GenerateLVL {
             pair1 = Random.Range(0, PAIR_ITEM_PIECE_COUNT);
             pair2 = Random.Range(0, PAIR_ITEM_PIECE_COUNT);
             if (pair1 == pair2) newPair = false;
-            //Debug.LogError(pair1 +"asdf"+ pair2);
 
-            //Debug.LogError(pair);
+
             foreach (int item in data.password)
             {
                 if (item == pair1 || item == pair2) newPair = false;
@@ -172,13 +147,11 @@ public class GenerateLVL {
                 //Debug.LogError(pair);
                 Item link = new Item();
                 link.type = ItemType.None;
-                //link.gObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-               // link.gObject.SetActive(false);
+
                 Vector3 between = data.player1[pair1].position - data.player1[pair2].position;
                 link.localScale = new Vector3(0.1f, 0.1f, between.magnitude);
-                //link.position = data.player1[pair2].position + (between / 2.0f);
                 link.prefabName = PAIR_ITEM_PREFAB;
-                //transform.rotation = Quaternion.LookRotation(between);
+
                 GameObject temp = new GameObject();
                 temp.transform.position = data.player1[pair2].position + (between / 2.0f);
                 temp.transform.LookAt(data.player1[pair1].position);
@@ -187,14 +160,9 @@ public class GenerateLVL {
                 data.player2.Add(link);
             }
         }
-        //locker.SetPassword(roomsData[roomIndex].password, roomsData[roomIndex].pswSegment);
 
         
         data.locker = locker;
-        //data.player2.Add(new Item())
-        //data.password = password;
-        //data.pswSegment = password.Length;
-        
 
         roomsData[roomIndex] = data;
     }
@@ -244,23 +212,20 @@ public class GenerateLVL {
         Item locker = new Item();
         locker.type = ItemType.ColorLocker;
         locker.prefabName = "Prefabs/ColorLock";
-        //locker.gObject = GameObject.Instantiate(Resources.Load<GameObject>("Prefabs/ColorLock").gameObject);
-        //locker.gObject.SetActive(false);
         Vector3 dim = roomsData[roomIndex].room.GetRoomDimension();
         locker.position = roomsData[roomIndex].room.transform.position + new Vector3(-(dim.x / 2 - 0.2f), dim.y / 2, dim.z / 4);
 
         Item text = new Item();
         text.type = ItemType.None;
         text.prefabName = formatedResult;
-        //text.gObject = new GameObject();
         text.position = roomsData[roomIndex].room.transform.position + new Vector3(0, dim.y / 2, 0);// + new Vector3((dim.x / 2 - 0.2f), dim.y / 2, dim.z / 4);
 
         RoomData data = new RoomData();
         data.locker = locker;
-        //data.player2.Add(new Item())
         data.password = password;
         data.pswSegment = password.Length;
         data.room = roomsData[roomIndex].room;
+        data.neededResult = 1;
         data.player2 = new List<Item>();
         data.player2.Add(text);
         roomsData[roomIndex] = data;

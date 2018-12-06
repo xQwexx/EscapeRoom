@@ -8,7 +8,7 @@ public class PairLockHandler : LockHandler {
     public override void OnButtonSelected(int selected)
     {
         indvBuffer.Add(selected);
-        Debug.LogError("Room Resolved" + selected);
+        gameObject.transform.GetChild(selected).GetComponent<LockerButton>().OnSelected(true);
         counter = 0;
         for (int i = 0; i < password.Count / indvNumber; i++)
         {
@@ -29,7 +29,7 @@ public class PairLockHandler : LockHandler {
         }
         if (counter == password.Count && password.Count == indvBuffer.Count)
         {
-            Debug.LogError("Room Resolved" + room);
+            Debug.Log("Room Resolved" + room);
             room.OnRoomResolved();
             counter = 0;
             //indvBuffer.RemoveRange(0, indvNumber);
@@ -38,7 +38,6 @@ public class PairLockHandler : LockHandler {
 
     public override void OnButtonDeselected(int id)
     {
-        Debug.LogError("Room Resoleafsdfasdfved" + id);
         for (int i = 0; i < indvBuffer.Count; i++)
         {
             if (indvBuffer[i] == id)
@@ -47,7 +46,7 @@ public class PairLockHandler : LockHandler {
                 int blockRange = indvBuffer.Count - blockCount < indvNumber ? indvBuffer.Count - blockCount : indvNumber;
                 for (int j = blockCount; j < blockCount + blockRange; j++)
                 {
-                    Debug.LogError(j + " index delete" + indvBuffer[j]);
+                    Debug.Log(j + " index delete" + indvBuffer[j]);
                     gameObject.transform.GetChild(indvBuffer[j]).GetComponent<LockerButton>().OnSelected(false);
                 }
                 indvBuffer.RemoveRange(blockCount, blockRange);

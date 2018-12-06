@@ -47,7 +47,7 @@ public class LockerButton : MonoBehaviour
     public void OnSelected(bool isSelected)
     {
         if (selectedMaterial == null) return;
-        Debug.LogError( id +" Button SelectedStatus: " + isSelected );
+        Debug.Log( id +" Button SelectedStatus: " + isSelected );
         this.isSelected = isSelected;
         myRenderer.material.color = isSelected ? myRenderer.material.color - inactiveMaterial.color + selectedMaterial.color : myRenderer.material.color + inactiveMaterial.color - selectedMaterial.color;
     }
@@ -59,11 +59,9 @@ public class LockerButton : MonoBehaviour
         if (gazedAt && InputControl.GetButtonDown(Controls.buttons.fire1))
         {
             //Debug.LogError("Selecting: " + this.gameObject);
-            if (selectedMaterial == null) locker.OnButtonSelected(id);
-            else if (!isSelected)
+            if (!isSelected)
             {
                 locker.OnButtonSelected(id);
-                OnSelected(true);
             }
             else
             {
@@ -71,12 +69,12 @@ public class LockerButton : MonoBehaviour
             }
         }
     }
-    public void SetSelected(Material selected)
+    /*public void SetSelected(Material selected)
     {
         selectedMaterial = selected;
-    }
+    }/*
     public void SetLockerHandler(LockHandler locker)
     {
         //this.locker = locker;
-    }
+    }*/
 }

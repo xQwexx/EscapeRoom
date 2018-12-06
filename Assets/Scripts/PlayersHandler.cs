@@ -51,30 +51,26 @@ public class PlayersHandler : MonoBehaviour {
 
      public string setPlayersPosition(string[] data)
     {
-
+        
         for (int i = 1; i < data.Length; i++)
         {
             string[] d = data[i].Split('%');
             if (int.Parse(d[0]) != ourPlayerId)
             {
-                setPlayerPosition(int.Parse(d[0]), d[1]);
+                string[] p = d[i].Split('$');
+                setPlayerPosition(int.Parse(d[0]), stringToVec(p[0]), stringToVec(p[0]), stringToVec(p[0]));
             }
         }
         //Debug.Log("hhhhhhhhhhhhhhhhhhhhhhhhhhh" + players[ourPlayerId].transform.position.ToString());
-        return players[ourPlayerId].ToString();
+        return players[ourPlayerId].data.pos.ToString() + '$' + players[ourPlayerId].data.moveDir.ToString() + '$' + players[ourPlayerId].data.headDir.ToString();
     }
 
 
-   public void setPlayerPosition(int cnnId, string playerData)
+   public void setPlayerPosition(int cnnId, Vector3 pos, Vector3 moveDir, Vector3 headDir)
     {
         if (cnnId == ourPlayerId) return;
         //players[cnnId].data.pos = players[cnnId].transform.position = stringToVec(data[0]);
-        players[cnnId].StringToPlayer(playerData);
-    }
-
-    public Player getPlayerPosition(int cnnId)
-    {
-        return players[cnnId].GetComponent<Player>();
+        players[cnnId].data.setPlayerData(pos, moveDir, headDir);
     }
 
     public void setOurPlayerId(int cnnId)
@@ -88,8 +84,8 @@ public class PlayersHandler : MonoBehaviour {
     }
     public string getPlayerName(int cnnId)
     {
-        if (!players.ContainsKey(cnnId)) return "Anonymus";
-        return players[cnnId].playerName;
+        if (!players.ContainsKey(cnnId)) return player.GetComponentInChildren<Player>().data.playerName;
+        return players[cnnId].data.playerName;
     }
 
     public void setPlayerName(int cnnId, string name)

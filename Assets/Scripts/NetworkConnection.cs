@@ -13,9 +13,10 @@ public class NetworkConnection : MonoBehaviour {
         ClientAndServer
     }
     NetworkState state = NetworkState.None;
-    private const int MAX_CONNECTION = 5;
-    private int port = 5701;
-
+    private static int MAX_CONNECTION = 5;
+    private static int port = 5701;
+    private static float lastMovementUpdate;
+    private static float movementUpdateRate = 0.05f;
     private int hostId;
     //private int serverHostId;
     private int webHostId;
@@ -25,11 +26,9 @@ public class NetworkConnection : MonoBehaviour {
 
     private bool isStarted = false;
     private byte error;
-    private string ipAddress;
     private HostTopology topo;
 
-    private float lastMovementUpdate;
-    private float movementUpdateRate = 0.05f;
+    
 
     private Server server = null;
     private Client client = null;
@@ -58,7 +57,7 @@ public class NetworkConnection : MonoBehaviour {
         if (state == NetworkState.Server) state = NetworkState.ClientAndServer;
         else if (state == NetworkState.None) state = NetworkState.Client;
         else return;
-        client = new Client();
+        client = gameObject.AddComponent<Client>();
 
         //if(isStarted) hostId = NetworkTransport.AddHost(topo, port, null);
         //"192.168.0.175""127.0.0.1"
@@ -67,6 +66,7 @@ public class NetworkConnection : MonoBehaviour {
         //isConnected = true;
         //Debug.Log("asdfkljahsdfklja;lkfj;adlksfj;lk:"+ NetworkTransport.Connect(hostId, serverIp, port, 0, out error));
 
+        
 
         client.Init(this, (int)NetworkTransport.Connect(NetworkTransport.AddHost(topo, 0, null), serverIp, port, 0, out error));
         isStarted = true;

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR;
@@ -14,7 +15,7 @@ public class SystemController : MonoBehaviour {
     bool isServer = false;
     string ipAddress;
     string pName;
-    bool isVrEnabled;
+
     // Use this for initialization
     void Start () {
         statusOutput = GameObject.Find("StatusOutput").GetComponent<Text>();
@@ -36,10 +37,9 @@ public class SystemController : MonoBehaviour {
         statusOutput.text = "Loading...";
         pName = GameObject.Find("NameInput").GetComponent<InputField>().text;
         ipAddress = "127.0.0.1";
-        isVrEnabled = false;
         isServer = true;
         //StartCoroutine(LoadDevice("cardboard"));
-        StartCoroutine(LoadLevel("Server", "Cardboard"));
+        StartCoroutine(LoadLevel("Server", "Cardboard", true));
         
     }
     public void ConnectToServer()
@@ -52,20 +52,18 @@ public class SystemController : MonoBehaviour {
             return;
         }
         ipAddress = "127.0.0.1";
-        isVrEnabled = true;
         ///StartCoroutine(LoadDevice("Cardboard"));
 
-        StartCoroutine(LoadLevel("Server", "Cardboard"));
+        StartCoroutine(LoadLevel("Server", "Cardboard", true));
         //Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
         //GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>().ConnectServer(ipAddress);
     }
     public void Exit()
     {
-        isVrEnabled = false;
-        StartCoroutine(LoadLevel("GUI", "None"));
+        StartCoroutine(LoadLevel("GUI", "", false));
     }
 
-    IEnumerator LoadLevel(string sceneName, string device)
+    IEnumerator LoadLevel(string sceneName, string device, bool isVrEnabled)
     {
         if (String.Compare(XRSettings.loadedDeviceName, device, true) != 0)
         {
@@ -80,15 +78,19 @@ public class SystemController : MonoBehaviour {
             print("Loading the Device: " + device);
             yield return null;   
         }
-        //gameObject.AddComponent<ViewerServer>();
+
         GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Player>().SetPlayerName(pName);
-        //ViewerServer gameSystem = 
-        // GameObject.FindGameObjectWithTag("GameController").
-        // GetComponent<ViewerServer>().Init();
-        Debug.LogError(GameObject.FindGameObjectWithTag("Player").GetComponentInChildren<Player>());
+
+
+        EventTrigger trigger = GameObject.FindGameObjectWithTag("Exit").AddComponent<EventTrigger>();
+        EventTrigger.Entry entry = new EventTrigger.Entry();
+        entry.eventID = EventTriggerType.PointerEnter;
+        entry.callback.AddListener((d) => { Exit(); });
+        trigger.triggers.Add(entry);
         //Debug.LogWarning("Load: Main " + GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>());
         var network = GameObject.FindGameObjectWithTag("GameController").GetComponent<NetworkConnection>();
-        if(isServer) network.CreateServer();
+       
+        if (isServer) network.CreateServer();
         network.ConnectServer(ipAddress);
     }
     

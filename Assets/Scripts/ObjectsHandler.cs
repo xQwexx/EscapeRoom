@@ -64,6 +64,7 @@ public class ObjectsHandler : MonoBehaviour {
 
     public void SetObjectPlace(int objId, Vector3 pos, Quaternion quat)
     {
+        if (selectedObject.GetComponent<ObjectController>().id == objId) return;
         objects[objId].transform.position = pos;
         objects[objId].transform.rotation = quat;
     }

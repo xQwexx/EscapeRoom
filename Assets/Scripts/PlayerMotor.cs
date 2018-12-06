@@ -26,13 +26,13 @@ public class PlayerMotor : MonoBehaviour
         Vector3 moveDirection = Vector3.zero;
         moveDirection = playerCamera.transform.right * InputControl.GetAxis(Controls.axes.horizontal) * avatar.moveSpeed;
 
-        avatar.headDir = playerCamera.transform.forward;
+        avatar.data.headDir = playerCamera.transform.forward;
 
         moveDirection += playerCamera.transform.forward * InputControl.GetAxis(Controls.axes.vertical) * avatar.moveSpeed;
 
         moveDirection.y = 0;
-        avatar.moveDir = moveDirection;
-
+        avatar.data.moveDir = moveDirection;
+        
 
         if (InputControl.GetButton(Controls.buttons.jump))
         {
@@ -43,7 +43,7 @@ public class PlayerMotor : MonoBehaviour
             moveDirection.y += -5;
         }
         controller.Move(moveDirection* Time.deltaTime);
-        avatar.pos = transform.position;
+        avatar.data.pos = transform.position;
 
         
 

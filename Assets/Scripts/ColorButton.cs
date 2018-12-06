@@ -5,8 +5,9 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Collider))]
-public class ColorButton : MonoBehaviour {
-
+public class ColorButton : VRButton
+{
+    /*
     public LockHandler locker;
 
     private Renderer myRenderer;
@@ -50,5 +51,15 @@ public class ColorButton : MonoBehaviour {
         {
             myRenderer.material = inactiveMaterial;
         }
+    }*/
+    protected override void OnPlayerEvent()
+    {
+        handler.OnButtonSelected(id);
+        myRenderer.material.color = inactiveMaterial.color + gazedAtMaterial.color;
     }
+    protected override void OnNoPlayerEvent()
+    {
+        if (!gazedAt) myRenderer.material = inactiveMaterial;
+    }
+
 }

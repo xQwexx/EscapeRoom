@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class PairItem : MonoBehaviour {
-
-
+public class PairItem : VRButton {
+    private bool isInPair = false;
+    /*
     private Renderer myRenderer;
     private bool gazedAt = false;
-    private bool isInPair = false;
+    
     public int id;
 
     public Material inactiveMaterial;
@@ -57,7 +57,26 @@ public class PairItem : MonoBehaviour {
         }
         if (isInPair) myRenderer.material = gazedAtMaterial;
         else myRenderer.material = inactiveMaterial;
+    }*/
+    protected override void OnPlayerEvent()
+    {
+        if (isInPair)
+        {
+            handler.OnButtonDeselected(id);
+            isInPair = false;
+        }
+        else
+        {
+            handler.OnButtonSelected(id);
+            isInPair = true;
+        }
     }
+    protected override void OnNoPlayerEvent()
+    {
+        if (isInPair) myRenderer.material = gazedAtMaterial;
+        else myRenderer.material = inactiveMaterial;
+    }
+
     public void IsInPair(bool pair)
     {
         //Debug.LogError("Selecting: " + id);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Room : MonoBehaviour {
-    public DoorHandler[] doors;
+    private DoorHandler[] doors;
 
     RoomHandler handler;
     public int id;
@@ -24,7 +24,7 @@ public class Room : MonoBehaviour {
         }
     }
 
-    internal void OnRoomNotResolved()
+    public void OnRoomNotResolved()
     {
         handler.OnRoomNotResolved(id);
     }
@@ -38,10 +38,6 @@ public class Room : MonoBehaviour {
     public void OnRoomResolved()
     {
         handler.OnRoomResolved(id);
-    }
-
-    public void AddObject(GameObject child)
-    {
     }
     public Vector3 GetRoomDimension()
     {

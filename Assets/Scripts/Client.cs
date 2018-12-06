@@ -16,10 +16,7 @@ public class Client : MonoBehaviour {
     private NetworkConnection connection;
 
 
-    private bool isStarted = false;
-    private bool isConnected = false;
-    private byte error;
-    bool created = false;
+    private bool isStarted;
 
     private PlayersHandler players;
     private ObjectsHandler objects;
@@ -30,6 +27,7 @@ public class Client : MonoBehaviour {
         this.connection = connection;
         this.hostId = cnnId;
 
+        isStarted = false;
         players = connection.gameObject.GetComponent<PlayersHandler>();
         objects = connection.gameObject.GetComponent<ObjectsHandler>();
         objects.SetClient(this);
@@ -44,22 +42,13 @@ public class Client : MonoBehaviour {
         connection.Send(msg, connection.unreliable, hostId);
     }
 
-    
-
-    private void Start()
-    {
-        
-        //Debug.Log("INIT Sended");
-        
-
-    }
 
     
 
     public string[] OnDataRecieved(string[] data)
     {
         if (data == null) return null;
-        Debug.Log("Client: " + hostId + " recieved: " + string.Join("|", data));
+        if(!data[0].Equals("ASKPOS")) Debug.Log("Client: " + hostId + " recieved: " + string.Join("|", data));
         switch (data[0])
         {
             case "ASKPOS":
@@ -68,7 +57,6 @@ public class Client : MonoBehaviour {
                 connection.Send(msg, connection.unreliable, hostId);
                 break;
             case "CONNECTED":
-                //StartCoroutine(Loadlvl());
                 connection.Send("INIT", connection.reliable, hostId);
                 break;
             case "ASKNAME":
@@ -82,14 +70,14 @@ public class Client : MonoBehaviour {
             case "DC":
                 players.PlayerDisconnected(int.Parse(data[1]));
                 break;
-            case "MOVABLEOBJECTS":
+            /*case "MOVABLEOBJ":
                 for (int i = 1; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
                     Debug.Log(data[i]);
                     objects.SpawnObjects(int.Parse(d[0]), Instantiate(Resources.Load<GameObject>(d[1]), stringToVec(d[2]), stringToQuat(d[3])));
                 }
-                break;
+                break;*/
             case "OBJECTS":
                 for (int i = 2; i < data.Length; i++)
                 {
@@ -101,34 +89,31 @@ public class Client : MonoBehaviour {
                     o.transform.rotation = stringToQuat(d[3]);
                 }
                 break;
-            case "MOVEOBJECT":
+            /*case "MOVEOBJECT":
                 for (int i = 1; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
                     Debug.Log(data[i]);
                     objects.SetObjectPlace(int.Parse(d[0]),  stringToVec(d[1]), stringToQuat(d[2]));
                 }
-                break;
+                break;*/
             case "TEXT":
                 {
                     string[] d = data[2].Split('%');
                     Debug.Log(data[2]);
                     GameObject t = Instantiate(Resources.Load<GameObject>("Prefabs/TextOutput"));
                     t.transform.position = stringToVec(d[1]);
-                    t.transform.parent = rooms.GetRoom(int.Parse(data[1])).transform;
+                    t.transform.SetParent(rooms.GetRoom(int.Parse(data[1])).transform);
                     t.GetComponentInChildren<Text>().text = d[0];
                 }
                 break;
             case "GRABBED":
-                break;
-            case "ROOM":
-                //Debug.LogError(data[1]);
-                Instantiate(Resources.Load<GameObject>(data[1]));
+                objects.SetObjectPlace(int.Parse(data[2]), stringToVec(data[3]), stringToQuat(data[4]));
                 break;
             case "LOCK":
                 OnLockDataRecieved(data);
                 break;
-            case "ROOMRESOLVED":
+            case "RESOLVED":
                 Debug.LogWarning("Recieved message: " + string.Join("|", data));
                 rooms.OnDoorOpen(int.Parse(data[1]), int.Parse(data[2]));
                 break;
@@ -139,17 +124,6 @@ public class Client : MonoBehaviour {
         //Debug.Log("Cliens: " + hostId + " recieved from Server message: " + string.Join("|", data));
         return null;
     }
-
-    /*IEnumerator Loadlvl()
-    {
-        //SceneManager.LoadScene("Main", LoadSceneMode.Single);
-        //Debug.Log("Scene loaded");
-        //yield return null;
-        //players = GetComponent<PlayersHandler>();
-        //objects = GetComponent<ObjectsHandler>();
-        //rooms = GetComponent<RoomHandler>();
-        
-    }*/
 
     private void OnLockDataRecieved(string[] data)
     {
@@ -205,16 +179,16 @@ public class Client : MonoBehaviour {
                 for (int i = 4; i < data.Length; i++)
                 {
                     string[] d = data[i].Split('%');
-                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[3])).GetComponent<LockerButton>();
+                    LockerButton button = Instantiate(Resources.Load<GameObject>(data[3])).AddComponent<LockerButton>();
                     button.gameObject.transform.parent = locker.gameObject.transform;
                     button.gameObject.transform.position = stringToVec(d[1]);
                     //button.gameObject.transform.localScale = stringToVec(d[2]);
                     //button.gameObject.transform.LookAt(stringToVec(d[3]));
                     button.id = buttonCount + i;// int.Parse(d[0]);
-                    button.SetLockerHandler(locker);
+                    //button.SetLockerHandler(locker);
                     Material mat = (Material)Resources.Load("Material/Blue", typeof(Material)); ;
                     //mat.SetColor("_SpecColor", Color.red);
-                    button.GetComponent<LockerButton>().SetSelected(mat);
+                    button.GetComponent<LockerButton>().selectedMaterial = mat;
                     button.gameObject.SetActive(true);
 
                 }
@@ -242,7 +216,7 @@ public class Client : MonoBehaviour {
        // if (int.Parse(data[1]) != hostId) return;
         players.setOurPlayerId(int.Parse(data[1]));
 
-        connection.Send("NAMEIS|" + players.getPlayerName(hostId), connection.reliable, hostId);
+        connection.Send("NAMEIS|" + players.getPlayerName(int.Parse(data[1])), connection.reliable, hostId);
 
         for (int i = 2; i < data.Length; i++)
         {
@@ -255,12 +229,12 @@ public class Client : MonoBehaviour {
     public void OnRoomResolving(int roomId)
     {
         Debug.LogWarning("Resolved Room: " + roomId);
-        connection.Send("ROOMRESOLVING|" + roomId.ToString(), connection.reliable, hostId);
+        connection.Send("RESOLVING|" + roomId.ToString(), connection.reliable, hostId);
     }
 
     internal void OnRoomNotResolving(int roomId)
     {
-        connection.Send("ROOMNOTRESOLVED|" + roomId.ToString(), connection.reliable, hostId);
+        connection.Send("NOTRESOLVING|" + roomId.ToString(), connection.reliable, hostId);
     }
 
     private Vector3 stringToVec(string s)

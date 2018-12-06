@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Player : PlayerData
+public class Player : MonoBehaviour
 {
-
+    public PlayerData data = new PlayerData();
     public GameObject head;
     public GameObject body;
 
@@ -14,7 +14,7 @@ public class Player : PlayerData
 
     void Update()
     {
-        gameObject.transform.position = pos;
+        gameObject.transform.position = data.pos;
         /*
         if (!isHostPlayer)
         {
@@ -24,12 +24,12 @@ public class Player : PlayerData
         }*/
 
         //transform.position = pos;
-            Quaternion newRotation = Quaternion.LookRotation(headDir);
+            Quaternion newRotation = Quaternion.LookRotation(data.headDir);
             head.transform.rotation = Quaternion.Slerp(head.transform.rotation, newRotation, rotationSpeed * Time.deltaTime);
-        if (moveDir != Vector3.zero)
+        if (data.moveDir != Vector3.zero)
         {
             //Debug.LogError(moveDir);
-            newRotation = Quaternion.LookRotation(moveDir);
+            newRotation = Quaternion.LookRotation(data.moveDir);
             //Debug.LogError(newRotation);
             body.transform.localRotation = Quaternion.Slerp(body.transform.localRotation, newRotation, rotationSpeed * Time.deltaTime);
             //Debug.LogError(body.transform.localRotation);
@@ -47,7 +47,7 @@ public class Player : PlayerData
     }
     public void SetPlayerName(string name)
     {
-        playerName = name;
+        data.playerName = name;
         GetComponentInChildren<Text>().text = name;
     }
 

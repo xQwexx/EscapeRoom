@@ -9,13 +9,10 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Networking.Types;
 
-public class Server : MonoBehaviour {
+public class Server {
 
     NetworkConnection connection;
 
-    private bool isStarted = false;
-    private byte error;
-    private string ipAddress;
     public GameObject thing;
 
     private Dictionary<int, int> playersImageRoomResolved = new Dictionary<int, int>();
@@ -37,10 +34,9 @@ public class Server : MonoBehaviour {
         //objects = connection.gameObject.GetComponent<ObjectsHandler>();
         rooms = connection.gameObject.GetComponent<RoomHandler>();
         clientIds = new List<int>();
-        isStarted = true;
         lvlgenerator = new GenerateLVL();
         lvlgenerator.Generate(rooms);
-        Debug.LogError("lvlgenerator run");
+        //Debug.LogError("lvlgenerator run");
     }
 
     private void Start()
@@ -61,7 +57,6 @@ public class Server : MonoBehaviour {
     }
     public void Refresh()
     {
-
         string posmsg = "ASKPOS";
         foreach (int cl in clientIds)
         {
@@ -91,24 +86,25 @@ public class Server : MonoBehaviour {
                 connection.Send( "GRABBED|" + data[1] + "|" + data[2] + "|" + data[3] + "|" + data[4], connection.unreliable, clientIds);
                 break;
             case "MYPOS":
-                players[cnnId].StringToPlayer(data[1]);
+                string[] d = data[1].Split('$');
+                players[cnnId].setPlayerData(stringToVec(d[0]), stringToVec(d[1]), stringToVec(d[2]));
                 break;
-            case "ROOMRESOLVING":
-                if (lvlgenerator.neededResult[int.Parse(data[1])] == 1)
+            case "RESOLVING":
+                if (lvlgenerator.roomsData[int.Parse(data[1])].neededResult == 1)
                 {
                     //rooms.OnDoorOpen(int.Parse(data[1]), 1);
-                    connection.Send("ROOMRESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
+                    connection.Send("RESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
                 }
                 else
                 {
                     if (!playersImageRoomResolved.ContainsKey(cnnId))
                     {
                         playersImageRoomResolved.Add(cnnId, 1);
-                        if(playersImageRoomResolved.Count == 2) connection.Send("ROOMRESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
+                        if(playersImageRoomResolved.Count == lvlgenerator.roomsData[int.Parse(data[1])].neededResult) connection.Send("RESOLVED|" + data[1] + "|" + "1", connection.reliable, clientIds);
                     }
                 }
                 break;
-            case "ROOMNOTRESOLVED":
+            case "NOTRESOLVING":
                 if (playersImageRoomResolved.ContainsKey(cnnId)) playersImageRoomResolved.Remove(cnnId);
                 break;
             default:
